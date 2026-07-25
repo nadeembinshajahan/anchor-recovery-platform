@@ -85,7 +85,7 @@ export default function HomePage() {
             </Link>
             <Link href="/companion" className="sun-button sun-button-glass">
               <span className="voice-pulse" aria-hidden="true" />
-              Talk to Anchor
+              Talk to Pulari
             </Link>
           </div>
           <ul className="hero-promises" aria-label="What to expect">
@@ -160,7 +160,7 @@ export default function HomePage() {
           href="/plan"
           className="sun-button sun-button-glass shrink-0"
         >
-          Personalize Anchor
+          Personalize Pulari
           <span aria-hidden="true">→</span>
         </Link>
       </section>

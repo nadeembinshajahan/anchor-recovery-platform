@@ -1,4 +1,4 @@
-# ⚓ Anchor — Recovery & Prevention Platform
+# 🌅 Pulari (പുലരി — dawn) — Recovery & Prevention Platform
 
 A multi-modal, GenAI-powered recovery and prevention platform for people navigating
 substance use disorders **and** the caregivers supporting them. Built for the
@@ -17,7 +17,9 @@ specifically for moments when **cognitive load is highest**.
 ## The design principle behind everything: zero typing under stress
 
 A person mid-craving or mid-panic cannot fill in forms. Every crisis-path
-interaction in Anchor is a **single tap or a spoken word**:
+interaction in Pulari is a **single tap or a spoken word** — there is no
+required text box on any crisis path; every intervention is reachable by tap
+or voice alone:
 
 | Requirement (from the problem statement) | Where it lives | How |
 | --- | --- | --- |
@@ -28,6 +30,7 @@ interaction in Anchor is a **single tap or a spoken word**:
 | Educational resources | `/learn` | Curated, clinically-sane static content (works offline) + "Explain this simply" powered by Gemini per topic. |
 | Contextual safety tools | `/nearby` | Geolocated Google Maps search for de-addiction centres, hospitals, pharmacies, counselling & AA/NA meetings + one-tap 24×7 helplines (National De-addiction 14446, Tele-MANAS, Vandrevala). |
 | Empowering families/caregivers | `/caregiver` | "Say this, not that" scripts for hard moments (relapse, denial, boundaries, burnout) generated on demand. |
+| **Prevention** | `/prevent` | Plan-ahead flow for a named high-risk event (a wedding, payday, meeting old friends): before/day-of steps, a word-for-word exit line, an ally ask, and early warning signs. |
 
 ## Approach and logic
 
@@ -60,13 +63,26 @@ interaction in Anchor is a **single tap or a spoken word**:
    (`lib/rateLimit.ts`), and model output is rendered as plain text — never as HTML —
    eliminating injection-based XSS (`components/AiText.tsx`).
 
+### Anti-hallucination guarantees
+
+- **Citations come from a closed catalogue.** Educational and caregiver answers may
+  only cite the hand-verified sources in `lib/sources.ts` (WHO, NIDA, NIMHANS,
+  Kerala's Vimukthi mission, Tele-MANAS, NMBA, SAMHSA). A citation id the model
+  invents fails to resolve and is structurally dropped before rendering — a made-up
+  reference cannot reach the user (`extractCitations`).
+- **Helpline numbers are never model-generated.** Every phone number in the app is
+  static data in `lib/config.ts`, rendered directly by the UI.
+- **Emergency escalation is hardcoded, not hoped for.** Every system prompt carries
+  the same non-negotiable rule: medical emergencies are answered first with "call
+  112 / 14446", enforced in `lib/prompts.ts` for all task types.
+
 ## How it works
 
 ```
 Browser (React client components)
 │
 ├── /sos, /learn, /caregiver ──► POST /api/generate ──► lib/prompts (validate+build)
-│        one tap, no typing         rate-limited          └► lib/gemini ──► Gemini 2.5 Flash
+│        one tap, no typing         rate-limited          └► lib/gemini ──► Gemini 3.6 Flash
 │
 ├── /companion (voice) ──► POST /api/live-token ──► ephemeral token (single-use, 2 min window)
 │        └── browser connects DIRECTLY to Gemini Live with the token:
@@ -108,7 +124,7 @@ the target user may be shaking, crying, or cognitively flooded:
 
 - **India-first locale** (event context): emergency number 112, De-addiction 14446 / Tele-MANAS /
   Vandrevala helplines. Constants live in `lib/config.ts` for easy localization.
-- Anchor is a **support tool, not a medical device**; it consistently routes
+- Pulari is a **support tool, not a medical device**; it consistently routes
   emergencies to human help first and never gives clinical or medication advice.
 - Single-instance in-memory rate limiting is acceptable for a demo deployment;
   a shared store (Redis) would replace it in production.

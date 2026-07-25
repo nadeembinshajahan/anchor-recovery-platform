@@ -13,34 +13,20 @@ import {
   CAREGIVER_SITUATIONS,
   type CaregiverSituation,
 } from "@/lib/content";
-
-type Result =
-  | { status: "loading" }
-  | { status: "done"; text: string }
-  | { status: "error" };
+import { useGenerate } from "@/lib/useGenerate";
 
 export default function CaregiverClient() {
   const [situation, setSituation] = useState<CaregiverSituation | null>(null);
-  const [result, setResult] = useState<Result>({ status: "loading" });
+  const { generate, text, loading, error, reset } = useGenerate();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  async function choose(s: CaregiverSituation) {
+  function choose(s: CaregiverSituation) {
     setSituation(s);
-    setResult({ status: "loading" });
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: "caregiver-script",
-          context: `${s.label}. ${s.context}`,
-        }),
-      });
-      const data = res.ok ? ((await res.json()) as { text?: string }) : null;
-      setResult(data?.text ? { status: "done", text: data.text } : { status: "error" });
-    } catch {
-      setResult({ status: "error" });
-    }
+    reset();
+    void generate({
+      task: "caregiver-script",
+      context: `${s.label}. ${s.context}`,
+    });
   }
 
   useEffect(() => {
@@ -83,7 +69,7 @@ export default function CaregiverClient() {
         </section>
       ) : (
         <section
-          aria-busy={result.status === "loading"}
+          aria-busy={loading}
           className="caregiver-result animate-fade-up"
         >
           <div className="caregiver-result-heading">
@@ -112,19 +98,19 @@ export default function CaregiverClient() {
               <span aria-hidden="true">✦</span>
               <p className="eyebrow">For this moment</p>
             </div>
-            {result.status === "loading" && (
+            {loading && (
               <p className="caregiver-script-status text-muted" aria-live="polite">
                 <span aria-hidden="true" className="caregiver-thinking-dot" />
                 Writing a script for this situation…
               </p>
             )}
-            {result.status === "done" && (
+            {text && !loading && (
               <div className="caregiver-script-answer">
                 <p className="eyebrow">Generated live with Gemini</p>
-                <AiText text={result.text} />
+                <AiText text={text} />
               </div>
             )}
-            {result.status === "error" && (
+            {error && !loading && (
               <div className="caregiver-fallback">
                 <p className="text-sm text-muted" aria-live="polite">
                   The AI script writer is unavailable right now — these fundamentals apply

@@ -5,7 +5,7 @@ import "server-only";
  * talk to our route handlers, and the Live voice feature receives a
  * short-lived ephemeral token instead of the real key.
  */
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { GEMINI_LIVE_MODEL, GEMINI_TEXT_MODEL } from "./config";
 import { buildPrompt, type GenerateRequest } from "./prompts";
 
@@ -37,8 +37,14 @@ export async function generateText(req: GenerateRequest): Promise<string> {
     contents: user,
     config: {
       systemInstruction: system,
-      temperature: 0.7,
-      maxOutputTokens: 800,
+      // Note: temperature/topP are deprecated on Gemini 3.x text models and
+      // deliberately omitted.
+      // Thinking is capped at the lowest level: replies here are short,
+      // structured support scripts where latency beats deliberation — and
+      // thinking tokens count against maxOutputTokens, which previously
+      // truncated answers mid-sentence.
+      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+      maxOutputTokens: 2048,
       abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
     },
   });

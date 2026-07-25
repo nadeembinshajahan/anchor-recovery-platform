@@ -12,6 +12,7 @@ import Link from "next/link";
 import AiText from "@/components/AiText";
 import BreathingCircle from "@/components/BreathingCircle";
 import { planToProfile, useSafetyPlan } from "@/lib/profile";
+import { useGenerate } from "@/lib/useGenerate";
 
 const SITUATIONS = [
   { id: "craving", emoji: "🌊", label: "I'm having a craving", detail: "An intense urge to use is building right now." },
@@ -35,10 +36,10 @@ You reached out. That is the strongest thing you could do right now.`;
 
 export default function SosFlow() {
   const { plan, ready } = useSafetyPlan();
+  const { generate, loading } = useGenerate();
   const [situation, setSituation] = useState<Situation | null>(null);
   const [script, setScript] = useState<string>(FALLBACK_SCRIPT);
   const [personalized, setPersonalized] = useState(false);
-  const [loading, setLoading] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const choose = useCallback(
@@ -46,31 +47,19 @@ export default function SosFlow() {
       setSituation(s);
       setScript(FALLBACK_SCRIPT);
       setPersonalized(false);
-      setLoading(true);
-      try {
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task: "emergency-script",
-            context: `${s.label}. ${s.detail}`,
-            profile: planToProfile(plan),
-          }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { text?: string };
-          if (data.text) {
-            setScript(data.text);
-            setPersonalized(true);
-          }
-        }
-      } catch {
-        // Network/model failure: the fallback script is already on screen.
-      } finally {
-        setLoading(false);
+      // The fallback script is already on screen; on any failure the hook
+      // returns null and we simply keep it.
+      const text = await generate({
+        task: "emergency-script",
+        context: `${s.label}. ${s.detail}`,
+        profile: planToProfile(plan),
+      });
+      if (text) {
+        setScript(text);
+        setPersonalized(true);
       }
     },
-    [plan],
+    [generate, plan],
   );
 
   useEffect(() => {

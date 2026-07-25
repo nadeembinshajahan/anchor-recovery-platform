@@ -2,8 +2,14 @@
  * Central configuration. Model names live here so they can be bumped in one
  * place without touching feature code.
  */
-export const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
-export const GEMINI_LIVE_MODEL = "gemini-3.1-flash-live-preview";
+export const GEMINI_TEXT_MODEL = "gemini-3.6-flash";
+/**
+ * Live voice model. The "-latest" alias tracks Google's newest stable
+ * native-audio release. Deliberately NOT gemini-3.1-flash-live-preview:
+ * as of 2026-07-25 that preview accepts connections and then drops them
+ * with server error 1011 within seconds (verified by direct repro).
+ */
+export const GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-latest";
 
 /** Hard cap on user-supplied text sent to the model (characters). */
 export const MAX_INPUT_CHARS = 2000;

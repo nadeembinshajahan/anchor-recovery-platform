@@ -20,14 +20,14 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://34.14.134.236.sslip.io",
   ),
   title: {
-    default: "Anchor — Recovery & Prevention Platform",
-    template: "%s | Anchor",
+    default: "Pulari — Recovery & Prevention Platform",
+    template: "%s | Pulari",
   },
   description:
     "A GenAI-powered companion for people navigating substance use recovery and their caregivers: zero-typing crisis support, personalized emergency scripts, education, and contextual safety tools.",
   openGraph: {
     type: "website",
-    title: "Anchor — A little more light for whatever today brings.",
+    title: "Pulari — A little more light for whatever today brings.",
     description:
       "Warm, zero-typing recovery support for hard moments, powered by Google Gemini.",
     images: [
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
         url: "/og.jpg",
         width: 1200,
         height: 630,
-        alt: "Anchor — A little more light for whatever today brings.",
+        alt: "Pulari — A little more light for whatever today brings.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Anchor — A little more light for whatever today brings.",
+    title: "Pulari — A little more light for whatever today brings.",
     description:
       "Warm, zero-typing recovery support for hard moments, powered by Google Gemini.",
     images: ["/og.jpg"],
@@ -49,7 +49,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7c866",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7c866" },
+    { media: "(prefers-color-scheme: dark)", color: "#191410" },
+  ],
 };
 
 export default function RootLayout({
@@ -60,16 +63,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-theme="light"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        {/* No-flash theme resolution. A stored choice wins; otherwise follow
+            the OS via prefers-color-scheme (the html element deliberately
+            ships with NO data-theme so the pure-CSS media query below also
+            works when JavaScript is unavailable). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{var t=localStorage.getItem("anchor.theme");document.documentElement.dataset.theme=t==="dark"?"dark":"light"}catch(e){}',
+              'try{var t=localStorage.getItem("anchor.theme");if(t!=="dark"&&t!=="light"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){}',
           }}
         />
       </head>

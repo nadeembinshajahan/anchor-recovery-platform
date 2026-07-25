@@ -4,12 +4,14 @@
  * nothing reaches the model that is not built here.
  */
 import { MAX_INPUT_CHARS } from "./config";
+import { catalogueForPrompt } from "./sources";
 
 export const TASK_TYPES = [
   "emergency-script",
   "caregiver-script",
   "explain-topic",
   "companion-reply",
+  "prevention-plan",
 ] as const;
 
 export type TaskType = (typeof TASK_TYPES)[number];
@@ -27,7 +29,7 @@ export interface GenerateRequest {
   };
 }
 
-const BASE_GUARDRAILS = `You are Anchor, a calm recovery-support companion inside a
+const BASE_GUARDRAILS = `You are Pulari, a calm recovery-support companion inside a
 substance-use recovery app. Rules you must always follow:
 - You are not a clinician. Never diagnose, never give medication or dosage advice.
 - Never be judgmental. Use plain, warm, short sentences (the reader is under stress).
@@ -39,7 +41,7 @@ substance-use recovery app. Rules you must always follow:
  * System prompt for the real-time voice companion (Gemini Live). Spoken
  * replies must stay short: long answers feel like lectures when read aloud.
  */
-export const COMPANION_SYSTEM_PROMPT = `You are Anchor, a warm voice companion
+export const COMPANION_SYSTEM_PROMPT = `You are Pulari, a warm voice companion
 inside a substance-use recovery app, having a real-time spoken conversation.
 - You are not a clinician. Never diagnose, never give medication or dosage advice.
 - Speak in 1-3 short, natural sentences per reply. Ask at most one gentle question.
@@ -64,7 +66,31 @@ Use at most 5 short paragraphs or bullets, no jargon, reading level ~grade 7.
 End with one practical takeaway starting with "Try this:".`,
   "companion-reply": `Continue a supportive voice conversation. Reply in 2-4
 short spoken-style sentences. Ask at most one gentle question. Never lecture.`,
+  "prevention-plan": `The user named an upcoming high-risk situation (a party,
+a wedding, meeting old friends, payday). Build them a compact prevention plan:
+"Before" — 3 numbered preparation steps; "On the day" — 3 numbered in-the-moment
+steps; one polite exit line they can say word-for-word (quoted); one specific
+ask they can send a trusted ally (quoted); and 2 early warning signs that mean
+"leave now". Keep every item to one sentence.`,
 };
+
+/**
+ * Tasks whose answers may include factual/clinical claims get the verified
+ * source catalogue and are told to cite ONLY from it. Crisis scripts and
+ * companion chat stay citation-free — nobody needs footnotes mid-panic.
+ */
+const CITED_TASKS: ReadonlySet<TaskType> = new Set([
+  "explain-topic",
+  "caregiver-script",
+  "prevention-plan",
+]);
+
+function citationRules(): string {
+  return `\n\nWhen you state a factual or clinical claim, append a citation id
+like [S2] chosen ONLY from this verified catalogue (never invent sources or
+cite anything outside it; if no catalogue entry fits, make no citation):
+${catalogueForPrompt()}`;
+}
 
 /** Type guard + sanitation for incoming API payloads. */
 export function parseGenerateRequest(body: unknown): GenerateRequest | null {
@@ -115,7 +141,9 @@ export function buildPrompt(req: GenerateRequest): {
     : "";
 
   return {
-    system: `${BASE_GUARDRAILS}\n\n${TASK_INSTRUCTIONS[req.task]}`,
+    system: `${BASE_GUARDRAILS}\n\n${TASK_INSTRUCTIONS[req.task]}${
+      CITED_TASKS.has(req.task) ? citationRules() : ""
+    }`,
     user: `${profileLines ? profileLines + "\n\n" : ""}Situation: ${req.context}`,
   };
 }

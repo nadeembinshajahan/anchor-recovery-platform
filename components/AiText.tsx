@@ -12,6 +12,7 @@
  * (loading flags, voice status).
  */
 import { memo, useMemo } from "react";
+import { extractCitations } from "@/lib/sources";
 
 interface Block {
   kind: "list" | "paragraph";
@@ -34,7 +35,12 @@ export function parseBlocks(text: string): Block[] {
 }
 
 function AiText({ text }: { text: string }) {
-  const blocks = useMemo(() => parseBlocks(text), [text]);
+  // Citations first (strips [S#] markers, resolves only catalogue ids —
+  // an invented source can never render), then structural parsing.
+  const { blocks, sources } = useMemo(() => {
+    const { display, sources } = extractCitations(text);
+    return { blocks: parseBlocks(display), sources };
+  }, [text]);
 
   return (
     <div className="space-y-3">
@@ -55,6 +61,25 @@ function AiText({ text }: { text: string }) {
         }
         return <p key={i}>{block.lines.join(" ")}</p>;
       })}
+      {sources.length > 0 && (
+        <footer className="ai-sources border-t border-card-border pt-3">
+          <p className="eyebrow mb-1.5">Sources</p>
+          <ul className="space-y-1 text-xs text-muted">
+            {sources.map((s) => (
+              <li key={s.id}>
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  {s.label} — {s.org}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </footer>
+      )}
     </div>
   );
 }

@@ -45,6 +45,16 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/prevent",
+    label: "Plan ahead",
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...stroke}>
+        <rect x="3.5" y="5" width="17" height="16" rx="2.5" />
+        <path d="M3.5 10h17M8 3v4M16 3v4M8.5 14.5l2.5 2.5 4.5-4.5" />
+      </svg>
+    ),
+  },
+  {
     href: "/companion",
     label: "Talk it out",
     icon: (
@@ -114,7 +124,7 @@ export default function Sidebar() {
           <span className="brand-horizon" />
         </span>
         <span className="brand-copy">
-          <strong>Anchor</strong>
+          <strong>Pulari</strong>
           <small>A steadier moment</small>
         </span>
       </Link>

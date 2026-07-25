@@ -20,6 +20,7 @@ import {
   type LiveStatus,
 } from "@/lib/liveClient";
 import { planToProfile, useSafetyPlan } from "@/lib/profile";
+import { useGenerate } from "@/lib/useGenerate";
 
 const QUICK_PHRASES = [
   "I'm having a hard day",
@@ -33,7 +34,7 @@ const QUICK_PHRASES = [
 const STATUS_TEXT: Record<LiveStatus, string> = {
   connecting: "Connecting…",
   live: "Listening — just start talking.",
-  "model-speaking": "Anchor is speaking…",
+  "model-speaking": "Pulari is speaking…",
   closed: "Session ended.",
   error: "Something went wrong.",
 };
@@ -55,6 +56,7 @@ const subscribeNoop = () => () => {};
 
 export default function Companion() {
   const { plan } = useSafetyPlan();
+  const { generate } = useGenerate();
   const [mode, setMode] = useState<Mode>("voice");
   const [status, setStatus] = useState<LiveStatus | "idle">("idle");
   const [reply, setReply] = useState<string>("");
@@ -117,32 +119,25 @@ export default function Companion() {
       setBusyPhrase(phrase);
       setReply("");
       setReplySource(null);
-      try {
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task: "companion-reply",
-            context: phrase,
-            profile: planToProfile(plan),
-          }),
-        });
-        const data = (await res.json()) as { text?: string; error?: string };
-        const text = data.text ?? data.error ?? "I'm here with you. Take one slow breath.";
+      const text = await generate({
+        task: "companion-reply",
+        context: phrase,
+        profile: planToProfile(plan),
+      });
+      if (text) {
         setReply(text);
-        setReplySource(data.text ? "gemini" : "fallback");
+        setReplySource("gemini");
         if ("speechSynthesis" in window) {
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
         }
-      } catch {
+      } else {
         setReply("I couldn't reach the assistant just now, but I'm still here. Try again in a moment.");
         setReplySource("fallback");
-      } finally {
-        setBusyPhrase(null);
       }
+      setBusyPhrase(null);
     },
-    [plan],
+    [generate, plan],
   );
 
   const voiceActive = status !== "idle" && status !== "closed" && status !== "error";
@@ -172,7 +167,7 @@ export default function Companion() {
               Talk it out
             </h1>
             <p className="companion-lede mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted sm:text-base">
-              No perfect words needed. Anchor will meet you gently, right where
+              No perfect words needed. Pulari will meet you gently, right where
               you are.
             </p>
           </header>
@@ -232,7 +227,7 @@ export default function Companion() {
               <span aria-hidden="true">✓</span> Pause anytime
             </li>
             <li>
-              <span aria-hidden="true">✓</span> No transcript saved by Anchor
+              <span aria-hidden="true">✓</span> No transcript saved by Pulari
             </li>
           </ul>
         </section>
@@ -249,7 +244,7 @@ export default function Companion() {
               What feels closest?
             </h1>
             <p className="companion-lede mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted sm:text-base">
-              Choose a thought below. Anchor will answer out loud, so you never
+              Choose a thought below. Pulari will answer out loud, so you never
               need to find the words.
             </p>
             {effectiveNotice && (
@@ -326,7 +321,7 @@ export default function Companion() {
         <p>
           Live voice responds only to what you say in that session; it does not
           receive your saved safety plan. Audio is streamed to Google Gemini and
-          is not recorded or stored by Anchor. In an emergency, call 112.
+          is not recorded or stored by Pulari. In an emergency, call 112.
         </p>
       </footer>
     </div>

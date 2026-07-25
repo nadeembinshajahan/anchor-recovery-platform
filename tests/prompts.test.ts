@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_INPUT_CHARS } from "@/lib/config";
+import { catalogueForPrompt } from "@/lib/sources";
 import {
   buildPrompt,
   parseGenerateRequest,
@@ -134,5 +135,30 @@ describe("buildPrompt", () => {
     // `copingTools?.length &&` yields 0 for []; ensure it is filtered, not printed.
     expect(user).not.toMatch(/^0$/m);
     expect(user).toContain("Their name: Asha");
+  });
+});
+
+describe("citation rules", () => {
+  it("accepts prevention-plan as a valid task type", () => {
+    expect(TASK_TYPES).toContain("prevention-plan");
+    expect(
+      parseGenerateRequest({ task: "prevention-plan", context: "A wedding on Saturday" }),
+    ).not.toBeNull();
+  });
+
+  it("injects the verified catalogue and only-from-catalogue rule for cited tasks", () => {
+    for (const task of ["explain-topic", "caregiver-script", "prevention-plan"] as const) {
+      const { system } = buildPrompt({ task, context: "test" });
+      expect(system).toContain(catalogueForPrompt());
+      expect(system).toContain("never invent sources");
+    }
+  });
+
+  it("keeps crisis and companion prompts citation-free", () => {
+    for (const task of ["emergency-script", "companion-reply"] as const) {
+      const { system } = buildPrompt({ task, context: "test" });
+      expect(system).not.toContain(catalogueForPrompt());
+      expect(system).not.toContain("[S1]");
+    }
   });
 });
