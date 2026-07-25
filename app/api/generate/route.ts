@@ -22,6 +22,22 @@ const responseCache = new TtlLruCache<string>({
   ttlMs: 60 * 60 * 1000, // 1 hour
 });
 
+/**
+ * Single-flight map: when N identical cacheable requests arrive
+ * concurrently (e.g. a workshop room tapping the same topic), only the
+ * first hits the model — the rest await the same in-flight promise instead
+ * of each paying for a duplicate generation.
+ */
+const inFlight = new Map<string, Promise<string>>();
+
+function generateCoalesced(key: string, run: () => Promise<string>): Promise<string> {
+  const pending = inFlight.get(key);
+  if (pending) return pending;
+  const promise = run().finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
+
 /** Largest accepted request body; the schema itself caps fields far lower,
  *  this just refuses oversized payloads before JSON parsing costs anything. */
 const MAX_BODY_BYTES = 16 * 1024;
@@ -67,7 +83,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const text = await generateText(parsed);
+    const text = key
+      ? await generateCoalesced(key, () => generateText(parsed))
+      : await generateText(parsed);
     if (key) responseCache.set(key, text);
     return NextResponse.json({ text });
   } catch (err) {

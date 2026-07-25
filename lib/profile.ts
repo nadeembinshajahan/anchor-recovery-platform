@@ -18,14 +18,15 @@ export interface SafetyPlan {
   updatedAt: string;
 }
 
-export const EMPTY_PLAN: SafetyPlan = {
+/** Frozen so the shared sentinel can never be mutated by a call site. */
+export const EMPTY_PLAN: SafetyPlan = Object.freeze({
   name: "",
   substance: "",
   supporter: "",
   supporterPhone: "",
   copingTools: [],
   updatedAt: "",
-};
+});
 
 const KEY = "anchor.safetyPlan.v1";
 /** Local event so same-tab writes notify subscribers (the native `storage`

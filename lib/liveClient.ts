@@ -53,14 +53,35 @@ const OUTPUT_RATE = 24000;
 
 /**
  * AudioWorklet processor source. Inlined and loaded via a Blob URL so the
- * app needs no extra static asset. It forwards raw Float32 mono frames from
- * the mic to the main thread every 128 samples.
+ * app needs no extra static asset.
+ *
+ * The render quantum is 128 samples (8 ms at 16 kHz); forwarding every
+ * quantum would mean ~125 postMessages + WebSocket sends per second. The
+ * worklet therefore accumulates 1024 samples (64 ms) before posting — an
+ * 8x reduction in message and network overhead, still well inside
+ * conversational latency.
  */
 const WORKLET_SOURCE = `
 class PcmForwarder extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.buffer = new Float32Array(1024);
+    this.offset = 0;
+  }
   process(inputs) {
     const channel = inputs[0] && inputs[0][0];
-    if (channel) this.port.postMessage(channel.slice(0));
+    if (!channel) return true;
+    let i = 0;
+    while (i < channel.length) {
+      const n = Math.min(channel.length - i, this.buffer.length - this.offset);
+      this.buffer.set(channel.subarray(i, i + n), this.offset);
+      this.offset += n;
+      i += n;
+      if (this.offset === this.buffer.length) {
+        this.port.postMessage(this.buffer.slice(0));
+        this.offset = 0;
+      }
+    }
     return true;
   }
 }
@@ -146,17 +167,28 @@ export async function startLiveSession(
   }
   const { token } = (await tokenRes.json()) as { token: string };
 
-  // 2. Microphone + capture context.
+  // 2. Microphone + capture context. From here on, every early exit must
+  // release the mic and close contexts — a leaked mic keeps the browser's
+  // recording indicator on and blocks other apps from the device.
   const mic = await navigator.mediaDevices.getUserMedia({
     audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
   });
 
   const captureCtx = new AudioContext({ sampleRate: INPUT_RATE });
-  const workletUrl = URL.createObjectURL(
-    new Blob([WORKLET_SOURCE], { type: "application/javascript" }),
-  );
-  await captureCtx.audioWorklet.addModule(workletUrl);
-  URL.revokeObjectURL(workletUrl);
+  try {
+    const workletUrl = URL.createObjectURL(
+      new Blob([WORKLET_SOURCE], { type: "application/javascript" }),
+    );
+    try {
+      await captureCtx.audioWorklet.addModule(workletUrl);
+    } finally {
+      URL.revokeObjectURL(workletUrl);
+    }
+  } catch (err) {
+    mic.getTracks().forEach((t) => t.stop());
+    void captureCtx.close();
+    throw err instanceof Error ? err : new Error("Audio setup failed.");
+  }
 
   // 3. Playback context and a gapless scheduling queue. All model audio is
   // routed through a shared bus so a single AnalyserNode can observe it.
@@ -271,12 +303,16 @@ export async function startLiveSession(
   const worklet = new AudioWorkletNode(captureCtx, "pcm-forwarder");
   worklet.port.onmessage = (event: MessageEvent<Float32Array>) => {
     if (stopped || !session) return;
-    session.sendRealtimeInput({
-      audio: {
-        data: floatTo16BitPcmBase64(event.data),
-        mimeType: `audio/pcm;rate=${INPUT_RATE}`,
-      },
-    });
+    try {
+      session.sendRealtimeInput({
+        audio: {
+          data: floatTo16BitPcmBase64(event.data),
+          mimeType: `audio/pcm;rate=${INPUT_RATE}`,
+        },
+      });
+    } catch {
+      // Socket mid-close: drop the frame; onclose/onerror handle teardown.
+    }
   };
   source.connect(worklet);
   // Worklets need a destination to keep pulling; route through zero gain.

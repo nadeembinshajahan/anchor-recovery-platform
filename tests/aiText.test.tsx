@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import AiText from "@/components/AiText";
+import AiText, { parseBlocks } from "@/components/AiText";
 
 describe("AiText", () => {
   it("renders numbered model output as list items", () => {
@@ -31,5 +31,32 @@ describe("AiText", () => {
   it("does not crash on empty input", () => {
     const { container } = render(<AiText text="" />);
     expect(container.firstChild).toBeInTheDocument();
+  });
+});
+
+describe("parseBlocks", () => {
+  it("detects numbered, dashed, and bullet-char lists", () => {
+    expect(parseBlocks("1. a\n2. b")[0].kind).toBe("list");
+    expect(parseBlocks("- a\n- b")[0].kind).toBe("list");
+    expect(parseBlocks("• a\n• b")[0].kind).toBe("list");
+  });
+
+  it("treats a single marker line as a paragraph, not a one-item list", () => {
+    expect(parseBlocks("1. lonely line")[0].kind).toBe("paragraph");
+  });
+
+  it("treats mixed blocks (marker + prose lines) as paragraphs", () => {
+    expect(parseBlocks("1. step one\nbut this is prose")[0].kind).toBe("paragraph");
+  });
+
+  it("splits blocks on blank lines and strips bold markers", () => {
+    const blocks = parseBlocks("**Intro** text.\n\n1. one\n2. two");
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].lines[0]).toBe("Intro text.");
+    expect(blocks[1].kind).toBe("list");
+  });
+
+  it("returns an empty array for whitespace-only input", () => {
+    expect(parseBlocks("  \n\n  ")).toEqual([]);
   });
 });

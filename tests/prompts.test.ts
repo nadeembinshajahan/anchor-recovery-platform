@@ -124,4 +124,15 @@ describe("buildPrompt", () => {
     expect(user).not.toContain("recovering from");
     expect(user).not.toContain("Coping tools");
   });
+
+  it("omits the coping-tools line for an empty array without leaking a falsy '0'", () => {
+    const { user } = buildPrompt({
+      ...base,
+      profile: { name: "Asha", copingTools: [] },
+    });
+    expect(user).not.toContain("Coping tools");
+    // `copingTools?.length &&` yields 0 for []; ensure it is filtered, not printed.
+    expect(user).not.toMatch(/^0$/m);
+    expect(user).toContain("Their name: Asha");
+  });
 });

@@ -47,9 +47,15 @@ export function useGenerate(): UseGenerateResult {
   const [error, setError] = useState<string | null>(null);
   /** Monotonic id of the most recent generate() call. */
   const requestId = useRef(0);
+  /** Controller for the request currently in flight, if any. */
+  const controller = useRef<AbortController | null>(null);
 
   const generate = useCallback(async (args: GenerateArgs): Promise<string | null> => {
     const id = ++requestId.current;
+    // A superseded request isn't just ignored — it's cancelled, so the
+    // network and server stop spending on an answer nobody will see.
+    controller.current?.abort();
+    controller.current = new AbortController();
     setLoading(true);
     setError(null);
 
@@ -58,6 +64,7 @@ export function useGenerate(): UseGenerateResult {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(args),
+        signal: controller.current.signal,
       });
       const data = (await res.json().catch(() => ({}))) as {
         text?: string;
@@ -83,6 +90,8 @@ export function useGenerate(): UseGenerateResult {
 
   const reset = useCallback(() => {
     requestId.current += 1; // invalidate anything still in flight
+    controller.current?.abort();
+    controller.current = null;
     setText(null);
     setError(null);
     setLoading(false);
