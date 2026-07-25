@@ -3,6 +3,7 @@
  * app supports. Keeping this in one module makes the AI surface auditable:
  * nothing reaches the model that is not built here.
  */
+import { z } from "zod";
 import { MAX_INPUT_CHARS } from "./config";
 import { catalogueForPrompt } from "./sources";
 
@@ -109,41 +110,61 @@ cite anything outside it; if no catalogue entry fits, make no citation):
 ${catalogueForPrompt()}`;
 }
 
-/** Type guard + sanitation for incoming API payloads. */
-export function parseGenerateRequest(body: unknown): GenerateRequest | null {
-  if (typeof body !== "object" || body === null) return null;
-  const b = body as Record<string, unknown>;
-  if (typeof b.task !== "string" || !TASK_TYPES.includes(b.task as TaskType)) {
-    return null;
-  }
-  if (typeof b.context !== "string" || b.context.trim().length === 0) {
-    return null;
-  }
-  const context = b.context.trim().slice(0, MAX_INPUT_CHARS);
+/**
+ * Zod schema for incoming API payloads — the single typed contract between
+ * clients and the AI surface.
+ *
+ * Tolerance policy (deliberate, matched by the test suite): a malformed
+ * `task` or `context` REJECTS the request, but a malformed personalization
+ * field is silently DROPPED — bad optional data should degrade to a less
+ * personal answer, never to a failed crisis request.
+ */
+const optionalCappedString = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 100) : undefined),
+  z.string().optional(),
+);
 
-  let profile: GenerateRequest["profile"];
-  if (typeof b.profile === "object" && b.profile !== null) {
-    const p = b.profile as Record<string, unknown>;
-    profile = {
-      name: clean(p.name),
-      substance: clean(p.substance),
-      supporter: clean(p.supporter),
-      copingTools: Array.isArray(p.copingTools)
-        ? p.copingTools.filter((t): t is string => typeof t === "string").map((t) => t.slice(0, 100)).slice(0, 10)
-        : undefined,
+const profileSchema = z.preprocess(
+  // Non-object profiles degrade to "no personalization", not an error.
+  (v) => (typeof v === "object" && v !== null ? v : undefined),
+  z
+    .object({
+      name: optionalCappedString,
+      substance: optionalCappedString,
+      supporter: optionalCappedString,
+      copingTools: z.preprocess(
+        (v) =>
+          Array.isArray(v)
+            ? v
+                .filter((t): t is string => typeof t === "string")
+                .map((t) => t.slice(0, 100))
+                .slice(0, 10)
+            : undefined,
+        z.array(z.string()).optional(),
+      ),
       // Only catalogue languages pass through; anything else is dropped
       // silently — the client is never trusted to steer the prompt freely.
-      language:
-        typeof p.language === "string" && p.language in RESPONSE_LANGUAGES
-          ? p.language
-          : undefined,
-    };
-  }
-  return { task: b.task as TaskType, context, profile };
-}
+      language: z.preprocess(
+        (v) => (typeof v === "string" && v in RESPONSE_LANGUAGES ? v : undefined),
+        z.string().optional(),
+      ),
+    })
+    .optional(),
+);
 
-function clean(v: unknown): string | undefined {
-  return typeof v === "string" && v.trim() ? v.trim().slice(0, 100) : undefined;
+const generateRequestSchema = z.object({
+  task: z.enum(TASK_TYPES),
+  context: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().slice(0, MAX_INPUT_CHARS) : v),
+    z.string().min(1),
+  ),
+  profile: profileSchema,
+});
+
+/** Validate + sanitize an incoming payload; null means "reject with 400". */
+export function parseGenerateRequest(body: unknown): GenerateRequest | null {
+  const result = generateRequestSchema.safeParse(body);
+  return result.success ? (result.data as GenerateRequest) : null;
 }
 
 /** Build the final prompt pair sent to Gemini. */

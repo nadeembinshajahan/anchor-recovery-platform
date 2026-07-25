@@ -109,6 +109,29 @@ npm test           # Vitest unit tests (validation, rate limiting, rendering)
 npm run build      # production build
 ```
 
+### Operations
+
+- **Health probe:** `GET /api/health` returns status, version, uptime, and a
+  `configured` boolean (never secret values) for monitors and orchestrators.
+- **Container:** a multi-stage `Dockerfile` builds a production image with a
+  placeholder key (real secrets are supplied at runtime, never baked in):
+
+```bash
+docker build -t pulari .
+docker run -p 3000:3000 -e GEMINI_API_KEY=your-key pulari
+```
+
+- **Engineering log:** [PROGRESS.md](PROGRESS.md) records how the platform was
+  built, phase by phase, with the reasoning behind each architectural call.
+
+### Verified against production
+
+Lighthouse (headless, run against the live deployment above):
+
+| Performance | Accessibility | Best practices | SEO |
+| :-: | :-: | :-: | :-: |
+| 97 | 96 | 100 | 100 |
+
 ## Accessibility
 
 Designed for "diverse users and environments" as a first-class constraint, because

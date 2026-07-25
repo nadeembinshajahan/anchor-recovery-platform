@@ -1,0 +1,211 @@
+/* Caregiver: situation grid and scripts (mechanical split from globals.css — order preserved) */
+/* Caregiver */
+.caregiver-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 10rem;
+  align-items: start;
+  gap: 0.8rem;
+}
+
+.caregiver-choice-number {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  place-items: center;
+  border: 1px solid rgba(143, 64, 28, 0.12);
+  border-radius: 0.8rem;
+  color: var(--primary-strong);
+  background: rgba(255, 222, 163, 0.42);
+  font-family: var(--font-geist-mono);
+  font-size: 0.65rem;
+  font-weight: 760;
+}
+
+.caregiver-choice-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.42rem;
+}
+
+.caregiver-choice-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+}
+
+.caregiver-choice-context {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.caregiver-choice-arrow {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.56);
+  transition: transform 180ms ease;
+}
+
+.caregiver-choice:hover .caregiver-choice-arrow {
+  transform: rotate(8deg) translate(0.1rem, -0.1rem);
+}
+
+.caregiver-result {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.caregiver-result-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.caregiver-result-heading h2 {
+  margin-top: 0.2rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 620;
+  letter-spacing: -0.035em;
+}
+
+.caregiver-script {
+  padding: clamp(1.4rem, 3vw, 2rem);
+}
+
+.caregiver-script-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.caregiver-script-label > span {
+  color: var(--primary);
+}
+
+.caregiver-script-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.caregiver-script-answer,
+.caregiver-fallback {
+  margin-top: 1rem;
+}
+
+.caregiver-script-answer > .eyebrow {
+  margin-bottom: 0.65rem;
+}
+
+.caregiver-fallback-list {
+  display: grid;
+  gap: 0.58rem;
+  margin-top: 0.9rem;
+}
+
+.caregiver-fallback-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.55rem;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.caregiver-tip-mark {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--sage);
+  background: rgba(65, 108, 88, 0.09);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.crisis-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 1.3rem;
+  border: 1px solid rgba(164, 55, 47, 0.14);
+  border-radius: 1.45rem;
+  background: rgba(255, 240, 222, 0.64);
+}
+
+.crisis-panel p {
+  color: var(--muted);
+}
+
+.crisis-panel-icon {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  grid-row: 1 / span 2;
+  place-items: center;
+  border-radius: 0.85rem;
+  color: #fffaf3;
+  background: var(--danger);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.crisis-panel-copy h2 {
+  margin-top: 0.15rem;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 620;
+}
+
+.crisis-panel-copy > p:last-child {
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.crisis-panel-actions {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.crisis-action {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.58rem 0.82rem;
+  border: 1px solid rgba(164, 55, 47, 0.14);
+  border-radius: 0.85rem;
+  color: var(--danger);
+  background: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.crisis-action-primary {
+  color: #fffaf3;
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.crisis-action-link {
+  color: var(--foreground);
+  border-color: rgba(105, 72, 42, 0.12);
+}
+

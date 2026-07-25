@@ -5,42 +5,22 @@
  *
  * Recovery is easier to defend with a plan made in a calm moment than with
  * willpower in a hard one. The user names an upcoming high-risk situation
- * (tap-first; one optional text field, since planning happens at calm times)
- * and gets a personal plan: prepare-before steps, day-of steps, a
- * word-for-word exit line, an ally ask, and early warning signs.
+ * (OccasionPicker) and gets a personal plan: prepare-before steps, day-of
+ * steps, a word-for-word exit line, an ally ask, and early warning signs.
+ * A safe general plan renders instantly and stays if generation fails.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AiText from "@/components/AiText";
 import { planToProfile, useSafetyPlan } from "@/lib/profile";
 import { useGenerate } from "@/lib/useGenerate";
-
-const OCCASIONS = [
-  { id: "party", emoji: "🎉", label: "A party or celebration", detail: "Drinks or substances will probably be around." },
-  { id: "wedding", emoji: "💍", label: "A wedding in the family", detail: "Long days, expectations, and toasts everywhere." },
-  { id: "old-friends", emoji: "🕰️", label: "Meeting old using friends", detail: "People connected to the times I used." },
-  { id: "payday", emoji: "💸", label: "Payday / money in hand", detail: "Extra cash has been a trigger before." },
-  { id: "festival", emoji: "🪔", label: "A festival weekend", detail: "Celebrations, crowds, and old habits colliding." },
-  { id: "travel", emoji: "🧳", label: "Travelling alone", detail: "Unstructured time away from my routines." },
-] as const;
-
-const FALLBACK_PLAN = `Before:
-1. Decide your no-thanks drink or snack order in advance and rehearse it once out loud.
-2. Plan your own transport so you can leave the moment you want to.
-3. Eat and sleep properly the day before — HALT states make everything harder.
-
-On the day:
-1. Arrive late, leave early, and keep your phone charged.
-2. Keep a drink you chose in your hand so nobody offers you one.
-3. Step outside for two minutes of slow breathing whenever the noise rises.
-
-Tell one person you trust where you'll be and ask them to check in on you once during the event.`;
+import OccasionPicker from "./OccasionPicker";
+import { FALLBACK_PLAN } from "./occasions";
 
 export default function PreventClient() {
   const { plan } = useSafetyPlan();
   const { generate, loading, error } = useGenerate();
   const [occasion, setOccasion] = useState<string | null>(null);
-  const [custom, setCustom] = useState("");
   const [planText, setPlanText] = useState<string>(FALLBACK_PLAN);
   const [personalized, setPersonalized] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -63,86 +43,19 @@ export default function PreventClient() {
     [generate, plan],
   );
 
-  const submitCustom = useCallback(
-    (event: React.FormEvent) => {
-      event.preventDefault();
-      const trimmed = custom.trim();
-      if (trimmed) {
-        void buildFor(trimmed, "A personally risky situation the user described.");
-      }
-    },
-    [buildFor, custom],
-  );
-
   useEffect(() => {
     if (occasion) headingRef.current?.focus();
   }, [occasion]);
 
   if (!occasion) {
     return (
-      <div className="space-y-7">
-        <section className="glass overflow-hidden px-6 py-9 text-center sm:px-10 sm:py-11">
-          <p className="eyebrow">
-            Prevention beats willpower
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Something risky coming up?
-          </h1>
-          <p className="mx-auto mt-3 max-w-lg text-muted">
-            Make the plan now, while you&apos;re steady. Tap what&apos;s ahead and
-            we&apos;ll prepare it together.
-          </p>
-        </section>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {OCCASIONS.map((o, i) => (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => buildFor(o.label, o.detail)}
-              className="glass lift animate-fade-up group flex min-h-32 items-start gap-4 p-5 text-left sm:p-6"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <span
-                aria-hidden="true"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-xl"
-              >
-                {o.emoji}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-lg font-semibold">{o.label}</span>
-                <span className="mt-1.5 block text-sm leading-relaxed text-muted">
-                  {o.detail}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={submitCustom} className="glass flex flex-col gap-3 p-5 sm:flex-row sm:items-end sm:p-6">
-          <div className="min-w-0 flex-1">
-            <label htmlFor="custom-occasion" className="mb-1.5 block text-sm font-semibold">
-              Something else coming up?
-            </label>
-            <input
-              id="custom-occasion"
-              type="text"
-              value={custom}
-              onChange={(e) => setCustom(e.target.value)}
-              maxLength={200}
-              placeholder="e.g. My cousin's engagement next Friday"
-              className="w-full rounded-xl border border-card-border bg-surface-2 px-4 py-3"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!custom.trim() || loading}
-            className="lift shrink-0 rounded-full bg-primary px-6 py-3 font-semibold text-white disabled:opacity-60"
-          >
-            Build my plan
-          </button>
-        </form>
-      </div>
+      <OccasionPicker
+        loading={loading}
+        onChoose={buildFor}
+        onCustom={(text) =>
+          void buildFor(text, "A personally risky situation the user described.")
+        }
+      />
     );
   }
 

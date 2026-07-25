@@ -1,26 +1,20 @@
 "use client";
 
 /**
- * Browser-side wrapper around a Gemini Live voice session.
- *
- * Audio pipeline, end to end:
- *
- *   microphone ─▶ getUserMedia ─▶ AudioContext(16 kHz) ─▶ AudioWorklet
- *     ─▶ Float32 frames ─▶ 16-bit PCM ─▶ base64 ─▶ session.sendRealtimeInput
- *
- *   session.onmessage ─▶ base64 PCM (24 kHz) ─▶ AudioBuffer queue
- *     ─▶ gapless scheduled playback via AudioContext(24 kHz)
- *
- * The real Gemini API key never reaches this code: we ask our own backend
- * (/api/live-token) for a single-use ephemeral token and connect with that.
- * Voice activity detection is handled server-side by the Live API, so we
- * simply stream mic audio continuously and play whatever comes back,
- * flushing the playback queue when the server signals an interruption.
+ * Browser-side orchestrator for a Gemini Live voice session. Capture,
+ * playback, and level metering live in lib/audio/*; this module owns the
+ * session lifecycle. The real Gemini API key never reaches this code: the
+ * backend mints a single-use ephemeral token (/api/live-token) and we
+ * connect with that. VAD is server-side, so we stream mic audio
+ * continuously and flush playback when the server signals interruption.
  */
 import { GoogleGenAI, Modality, type Session } from "@google/genai";
+import { encodePcm16Base64, INPUT_RATE, openMicCapture, startPcmForwarding } from "./audio/capture";
+import { createLevelReader } from "./audio/levels";
+import { createPlaybackQueue } from "./audio/playback";
 import { GEMINI_LIVE_MODEL } from "./config";
-import { COMPANION_SYSTEM_PROMPT } from "./prompts";
 import { loadPlan, PLAN_LANGUAGES } from "./profile";
+import { COMPANION_SYSTEM_PROMPT } from "./prompts";
 
 export type LiveStatus =
   | "connecting"
@@ -42,104 +36,9 @@ export interface LiveSessionHandle {
   /**
    * Smoothed audio amplitudes in [0, 1] for visualization — `input` is the
    * user's microphone, `output` is the model's voice. Designed to be polled
-   * once per animation frame; smoothing (fast attack, slow release) happens
-   * internally so the caller can map values straight to transforms.
+   * once per animation frame.
    */
   getLevels: () => { input: number; output: number };
-}
-
-/** Sample rates required by the Live API (input) and returned by it (output). */
-const INPUT_RATE = 16000;
-const OUTPUT_RATE = 24000;
-
-/**
- * AudioWorklet processor source. Inlined and loaded via a Blob URL so the
- * app needs no extra static asset.
- *
- * The render quantum is 128 samples (8 ms at 16 kHz); forwarding every
- * quantum would mean ~125 postMessages + WebSocket sends per second. The
- * worklet therefore accumulates 1024 samples (64 ms) before posting — an
- * 8x reduction in message and network overhead, still well inside
- * conversational latency.
- */
-const WORKLET_SOURCE = `
-class PcmForwarder extends AudioWorkletProcessor {
-  constructor() {
-    super();
-    this.buffer = new Float32Array(1024);
-    this.offset = 0;
-  }
-  process(inputs) {
-    const channel = inputs[0] && inputs[0][0];
-    if (!channel) return true;
-    let i = 0;
-    while (i < channel.length) {
-      const n = Math.min(channel.length - i, this.buffer.length - this.offset);
-      this.buffer.set(channel.subarray(i, i + n), this.offset);
-      this.offset += n;
-      i += n;
-      if (this.offset === this.buffer.length) {
-        this.port.postMessage(this.buffer.slice(0));
-        this.offset = 0;
-      }
-    }
-    return true;
-  }
-}
-registerProcessor("pcm-forwarder", PcmForwarder);
-`;
-
-/** Convert a Float32 [-1, 1] frame to base64-encoded little-endian PCM16. */
-function floatTo16BitPcmBase64(frame: Float32Array): string {
-  const pcm = new Int16Array(frame.length);
-  for (let i = 0; i < frame.length; i++) {
-    const s = Math.max(-1, Math.min(1, frame[i]));
-    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  const bytes = new Uint8Array(pcm.buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
-}
-
-/** Decode base64 PCM16 (24 kHz mono) into an AudioBuffer for playback. */
-function base64ToAudioBuffer(b64: string, ctx: AudioContext): AudioBuffer {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const pcm = new Int16Array(bytes.buffer);
-  const buffer = ctx.createBuffer(1, pcm.length, OUTPUT_RATE);
-  const channel = buffer.getChannelData(0);
-  for (let i = 0; i < pcm.length; i++) channel[i] = pcm[i] / 0x8000;
-  return buffer;
-}
-
-/**
- * Rough loudness of an analyser's current window: RMS of the time-domain
- * signal, boosted into a perceptually useful 0..1 range for visuals
- * (conversational speech RMS rarely exceeds ~0.35).
- */
-function analyserLevel(analyser: AnalyserNode, scratch: Uint8Array<ArrayBuffer>): number {
-  analyser.getByteTimeDomainData(scratch);
-  let sumSquares = 0;
-  for (let i = 0; i < scratch.length; i++) {
-    const centered = (scratch[i] - 128) / 128;
-    sumSquares += centered * centered;
-  }
-  const rms = Math.sqrt(sumSquares / scratch.length);
-  return Math.min(1, rms * 2.8);
-}
-
-/**
- * Asymmetric exponential smoothing for animation: rises quickly with the
- * voice (attack) and decays gently (release) so motion feels organic
- * instead of flickering with every syllable.
- */
-function smooth(previous: number, target: number): number {
-  const factor = target > previous ? 0.5 : 0.12;
-  return previous + (target - previous) * factor;
 }
 
 /** True when the current browser can run the full Live pipeline. */
@@ -150,6 +49,20 @@ export function supportsLiveVoice(): boolean {
     !!navigator.mediaDevices?.getUserMedia &&
     typeof AudioWorkletNode !== "undefined"
   );
+}
+
+/** Kickoff turn so Pulari speaks first — personalized from the on-device
+ *  plan, which is never sent anywhere except this session. */
+function greetingTurn(): string {
+  const plan = loadPlan();
+  const preferred = PLAN_LANGUAGES.find((l) => l.code === plan.language);
+  return `[Session start — the user just opened the voice page${
+    plan.name ? `; their name is ${plan.name}` : ""
+  }${
+    preferred && preferred.code !== "en"
+      ? `; they prefer to talk in ${preferred.label}`
+      : ""
+  }. Greet them warmly in one or two short sentences and gently ask how they are right now.]`;
 }
 
 /**
@@ -168,70 +81,16 @@ export async function startLiveSession(
   }
   const { token } = (await tokenRes.json()) as { token: string };
 
-  // 2. Microphone + capture context. From here on, every early exit must
-  // release the mic and close contexts — a leaked mic keeps the browser's
-  // recording indicator on and blocks other apps from the device.
-  const mic = await navigator.mediaDevices.getUserMedia({
-    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+  // 2. Microphone + capture context (releases itself on setup failure).
+  const { mic, captureCtx } = await openMicCapture();
+
+  // 3. Playback queue; "queue drained" returns UI state to listening.
+  let stopped = false;
+  const playback = createPlaybackQueue(() => {
+    if (!stopped) handlers.onStatus("live");
   });
 
-  const captureCtx = new AudioContext({ sampleRate: INPUT_RATE });
-  try {
-    const workletUrl = URL.createObjectURL(
-      new Blob([WORKLET_SOURCE], { type: "application/javascript" }),
-    );
-    try {
-      await captureCtx.audioWorklet.addModule(workletUrl);
-    } finally {
-      URL.revokeObjectURL(workletUrl);
-    }
-  } catch (err) {
-    mic.getTracks().forEach((t) => t.stop());
-    void captureCtx.close();
-    throw err instanceof Error ? err : new Error("Audio setup failed.");
-  }
-
-  // 3. Playback context and a gapless scheduling queue. All model audio is
-  // routed through a shared bus so a single AnalyserNode can observe it.
-  const playbackCtx = new AudioContext({ sampleRate: OUTPUT_RATE });
-  const outputBus = playbackCtx.createGain();
-  const outputAnalyser = playbackCtx.createAnalyser();
-  outputAnalyser.fftSize = 1024;
-  outputBus.connect(outputAnalyser);
-  outputAnalyser.connect(playbackCtx.destination);
-  let playhead = 0;
-  let liveSources: AudioBufferSourceNode[] = [];
-
-  const flushPlayback = () => {
-    liveSources.forEach((src) => {
-      try {
-        src.stop();
-      } catch {
-        /* already stopped */
-      }
-    });
-    liveSources = [];
-    playhead = playbackCtx.currentTime;
-  };
-
-  const enqueueAudio = (b64: string) => {
-    const buffer = base64ToAudioBuffer(b64, playbackCtx);
-    const source = playbackCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(outputBus);
-    playhead = Math.max(playhead, playbackCtx.currentTime);
-    source.start(playhead);
-    playhead += buffer.duration;
-    liveSources.push(source);
-    source.onended = () => {
-      liveSources = liveSources.filter((s) => s !== source);
-      if (liveSources.length === 0 && !stopped) handlers.onStatus("live");
-    };
-  };
-
-  // 4. Connect to Gemini Live with the ephemeral token.
   let session: Session | null = null;
-  let stopped = false;
   let inputAnalyser: AnalyserNode | null = null;
 
   const stop = () => {
@@ -243,19 +102,17 @@ export async function startLiveSession(
       /* socket may already be closed */
     }
     inputAnalyser?.disconnect();
-    outputAnalyser.disconnect();
-    outputBus.disconnect();
+    playback.close();
     mic.getTracks().forEach((t) => t.stop());
     void captureCtx.close();
-    void playbackCtx.close();
     handlers.onStatus("closed");
   };
 
+  // 4. Connect to Gemini Live with the ephemeral token.
   const ai = new GoogleGenAI({
     apiKey: token,
     httpOptions: { apiVersion: "v1alpha" },
   });
-
   try {
     session = await ai.live.connect({
       model: GEMINI_LIVE_MODEL,
@@ -266,15 +123,14 @@ export async function startLiveSession(
       callbacks: {
         onmessage: (message) => {
           if (message.serverContent?.interrupted) {
-            // User started talking over the model: stop playback immediately.
-            flushPlayback();
+            // User started talking over the model: stop playback now.
+            playback.flush();
             handlers.onStatus("live");
             return;
           }
-          const audio = message.data;
-          if (audio) {
+          if (message.data) {
             handlers.onStatus("model-speaking");
-            enqueueAudio(audio);
+            playback.enqueue(message.data);
           }
         },
         onerror: () => {
@@ -291,65 +147,33 @@ export async function startLiveSession(
   } catch (err) {
     mic.getTracks().forEach((t) => t.stop());
     void captureCtx.close();
-    void playbackCtx.close();
+    playback.close();
     throw err instanceof Error ? err : new Error("Voice connection failed.");
   }
 
-  // Pulari speaks first: a kickoff turn right after connect means the user
-  // hears a warm greeting instead of pressure-inducing silence. Personalized
-  // from the on-device plan (never sent anywhere except this session).
-  const plan = loadPlan();
-  const preferred = PLAN_LANGUAGES.find((l) => l.code === plan.language);
-  session.sendClientContent({
-    turns: `[Session start — the user just opened the voice page${
-      plan.name ? `; their name is ${plan.name}` : ""
-    }${
-      preferred && preferred.code !== "en"
-        ? `; they prefer to talk in ${preferred.label}`
-        : ""
-    }. Greet them warmly in one or two short sentences and gently ask how they are right now.]`,
-    turnComplete: true,
-  });
+  session.sendClientContent({ turns: greetingTurn(), turnComplete: true });
 
-  // 5. Start streaming mic frames to the session. The analyser taps the mic
-  // signal in parallel with the worklet — it never alters what is sent.
-  const source = captureCtx.createMediaStreamSource(mic);
-  inputAnalyser = captureCtx.createAnalyser();
-  inputAnalyser.fftSize = 1024;
-  source.connect(inputAnalyser);
-  const worklet = new AudioWorkletNode(captureCtx, "pcm-forwarder");
-  worklet.port.onmessage = (event: MessageEvent<Float32Array>) => {
+  // 5. Stream mic frames to the session.
+  inputAnalyser = startPcmForwarding(captureCtx, mic, (frame) => {
     if (stopped || !session) return;
     try {
       session.sendRealtimeInput({
         audio: {
-          data: floatTo16BitPcmBase64(event.data),
+          data: encodePcm16Base64(frame),
           mimeType: `audio/pcm;rate=${INPUT_RATE}`,
         },
       });
     } catch {
       // Socket mid-close: drop the frame; onclose/onerror handle teardown.
     }
-  };
-  source.connect(worklet);
-  // Worklets need a destination to keep pulling; route through zero gain.
-  const silent = captureCtx.createGain();
-  silent.gain.value = 0;
-  worklet.connect(silent).connect(captureCtx.destination);
+  });
 
-  // 6. Level polling for the visualizer (see LiveSessionHandle.getLevels).
-  const scratch = new Uint8Array(1024);
-  let inputLevel = 0;
-  let outputLevel = 0;
-  const getLevels = () => {
-    if (stopped) return { input: 0, output: 0 };
-    inputLevel = smooth(
-      inputLevel,
-      inputAnalyser ? analyserLevel(inputAnalyser, scratch) : 0,
-    );
-    outputLevel = smooth(outputLevel, analyserLevel(outputAnalyser, scratch));
-    return { input: inputLevel, output: outputLevel };
-  };
+  // 6. Level polling for the visualizer.
+  const getLevels = createLevelReader({
+    getInputAnalyser: () => inputAnalyser,
+    outputAnalyser: playback.analyser,
+    isActive: () => !stopped,
+  });
 
   handlers.onStatus("live");
   return { stop, getLevels };

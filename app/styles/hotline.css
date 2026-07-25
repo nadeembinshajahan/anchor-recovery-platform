@@ -1,0 +1,86 @@
+/* Hotline dock (mechanical split from globals.css — order preserved) */
+/* Hotline dock */
+.hotline-dock {
+  position: sticky;
+  z-index: 50;
+  bottom: 0;
+  width: 100%;
+  padding: 0.55rem max(0.8rem, env(safe-area-inset-right)) max(0.55rem, env(safe-area-inset-bottom))
+    max(0.8rem, env(safe-area-inset-left));
+  border-top: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 249, 236, 0.82);
+  box-shadow: 0 -12px 35px rgba(95, 58, 25, 0.08);
+  backdrop-filter: blur(18px) saturate(1.06);
+  -webkit-backdrop-filter: blur(18px) saturate(1.06);
+}
+
+.hotline-inner {
+  display: flex;
+  width: min(100%, 86rem);
+  min-height: 2.25rem;
+  margin-inline: auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.human-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--sage);
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.human-help-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--sage);
+  box-shadow: 0 0 0 0.25rem var(--sage-soft);
+}
+
+.hotline-divider {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--line);
+}
+
+.emergency-copy {
+  white-space: nowrap;
+}
+
+.emergency-copy a {
+  color: var(--danger);
+  font-weight: 820;
+  text-underline-offset: 2px;
+}
+
+.hotline-links {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hotline-links::-webkit-scrollbar {
+  display: none;
+}
+
+.hotline-link {
+  display: inline-flex;
+  min-height: 2rem;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid rgba(105, 72, 42, 0.11);
+  border-radius: 0.65rem;
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.5);
+  font-weight: 690;
+  text-decoration: none;
+}
+

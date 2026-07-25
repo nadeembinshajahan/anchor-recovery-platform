@@ -1,0 +1,427 @@
+/* SOS crisis flow and voice companion surfaces (mechanical split from globals.css — order preserved) */
+/* SOS and companion */
+.sos-situations-grid,
+.caregiver-choice-grid,
+.quick-phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.sos-situation-card,
+.caregiver-choice,
+.quick-phrase-card {
+  position: relative;
+  min-height: 8rem;
+  padding: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1.45rem;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 94% 8%, rgba(249, 204, 113, 0.28), transparent 6rem),
+    rgba(255, 255, 255, 0.55);
+  box-shadow: 0 12px 35px rgba(111, 69, 28, 0.07);
+  text-align: left;
+}
+
+.sos-situation-card:nth-child(3n + 2),
+.caregiver-choice:nth-child(3n + 2),
+.quick-phrase-card:nth-child(3n + 2) {
+  background:
+    radial-gradient(circle at 94% 8%, rgba(170, 202, 181, 0.3), transparent 6rem),
+    rgba(255, 255, 255, 0.55);
+}
+
+.sos-situation-card:nth-child(3n),
+.caregiver-choice:nth-child(3n),
+.quick-phrase-card:nth-child(3n) {
+  background:
+    radial-gradient(circle at 94% 8%, rgba(237, 175, 137, 0.28), transparent 6rem),
+    rgba(255, 255, 255, 0.55);
+}
+
+.sos-grounding-card,
+.caregiver-script,
+.companion-stage,
+.companion-reply {
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 2rem;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(255, 248, 232, 0.48));
+  box-shadow: var(--shadow-soft);
+}
+
+.sos-contact-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.companion-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.companion-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(18rem, 1.1fr);
+  grid-template-areas:
+    "header orb"
+    "status orb"
+    "action orb"
+    "notice orb"
+    "promises orb";
+  column-gap: clamp(2rem, 5vw, 5rem);
+  row-gap: 1rem;
+  min-height: 34rem;
+  align-content: center;
+  align-items: center;
+  padding: clamp(2rem, 5vw, 4rem);
+  text-align: left;
+}
+
+.companion-header {
+  grid-area: header;
+}
+
+.companion-kicker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.companion-kicker-row-centered {
+  justify-content: center;
+}
+
+.companion-kicker-row .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.companion-kicker-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(218, 125, 48, 0.12);
+}
+
+.companion-private-badge {
+  display: inline-flex;
+  min-height: 1.9rem;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.34rem 0.58rem;
+  border: 1px solid rgba(65, 108, 88, 0.14);
+  border-radius: 999px;
+  color: var(--sage);
+  background: rgba(229, 241, 229, 0.72);
+  font-size: 0.62rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.companion-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 5.2vw, 4.6rem);
+  font-weight: 620;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.companion-lede {
+  margin-inline: 0 !important;
+}
+
+.companion-orb-stage {
+  position: relative;
+  grid-area: orb;
+  display: grid;
+  min-height: 25rem;
+  place-items: center;
+}
+
+.companion-orb-light {
+  position: absolute;
+  width: min(28rem, 90%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(250, 202, 108, 0.2), transparent 66%);
+  pointer-events: none;
+}
+
+.companion-status {
+  grid-area: status;
+  display: inline-flex;
+  min-height: 1.5rem;
+  width: fit-content;
+  align-items: center;
+  gap: 0.45rem;
+  margin-inline: 0 !important;
+  color: var(--muted);
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+.companion-status-dot,
+.sos-script-status {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 0.24rem rgba(218, 125, 48, 0.12);
+}
+
+.companion-status[data-status="live"] .companion-status-dot,
+.companion-status[data-status="model-speaking"] .companion-status-dot {
+  background: var(--sage);
+  box-shadow: 0 0 0 0.24rem rgba(65, 108, 88, 0.12);
+}
+
+.companion-primary-action {
+  grid-area: action;
+  justify-self: start;
+  min-width: 13rem;
+  min-height: 3.45rem;
+  margin-top: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  color: #fffaf3;
+  background: var(--primary-strong);
+  box-shadow: 0 14px 35px rgba(113, 48, 20, 0.2);
+}
+
+.companion-primary-action.companion-primary-action-stop {
+  background: var(--danger);
+}
+
+.companion-primary-action.companion-primary-action-stop:hover {
+  background: #8e2f2a;
+}
+
+.companion-notice {
+  grid-area: notice;
+  width: 100%;
+  margin: 0 !important;
+  color: var(--muted);
+  background: rgba(255, 241, 210, 0.66);
+}
+
+.companion-promises {
+  grid-area: promises;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.companion-promises li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.58rem;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.48);
+  font-size: 0.64rem;
+  font-weight: 680;
+}
+
+.companion-promises li span {
+  color: var(--sage);
+}
+
+.companion-reply {
+  padding: 1.4rem;
+}
+
+.companion-reply[data-source="gemini"] {
+  border-color: rgba(65, 108, 88, 0.2);
+}
+
+.companion-reply[data-source="fallback"] {
+  border-color: rgba(218, 125, 48, 0.2);
+}
+
+.companion-reply-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.companion-reply-avatar {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  color: #fffaf3;
+  background: var(--primary-strong);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.companion-reply-heading > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.companion-reply-heading > div > span {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.companion-reply-body {
+  color: var(--foreground);
+}
+
+.companion-privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.companion-privacy-icon {
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--sage);
+  background: rgba(65, 108, 88, 0.09);
+}
+
+.quick-phrase-mark {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.quick-phrase-arrow,
+.sos-situation-arrow {
+  color: var(--primary);
+  transition: transform 180ms ease;
+}
+
+.quick-phrase-card:hover .quick-phrase-arrow,
+.sos-situation-card:hover .sos-situation-arrow {
+  transform: translateX(0.2rem);
+}
+
+.sos-intro-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.sos-intro-lede {
+  max-width: 34rem;
+  margin-inline: auto;
+  margin-top: 0.8rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.sos-assurances {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.sos-assurances span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.36rem 0.58rem;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.45);
+  font-size: 0.66rem;
+  font-weight: 680;
+}
+
+.sos-assurances i {
+  color: var(--sage);
+  font-style: normal;
+}
+
+.sos-script-meta,
+.sos-section-heading,
+.sos-contact-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.sos-script-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.sos-script-label[data-source="gemini"] .sos-script-status {
+  background: var(--sage);
+  box-shadow: 0 0 0 0.24rem rgba(65, 108, 88, 0.12);
+}
+
+.sos-script-note,
+.sos-section-heading > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.sos-section-heading h2,
+.sos-contact-heading h2 {
+  margin-top: 0.15rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  font-weight: 620;
+  letter-spacing: -0.025em;
+}
+
+.sos-contact-heading {
+  justify-content: flex-start;
+}
+
+.sos-contact-heading p {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.sos-contact-mark {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  color: #fffaf3;
+  background: var(--sage);
+}
+
+.breathing-guide {
+  border-color: rgba(255, 255, 255, 0.72);
+}
+

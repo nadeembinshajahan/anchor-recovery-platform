@@ -47,10 +47,12 @@ export const EMPTY_PLAN: SafetyPlan = Object.freeze({
   updatedAt: "",
 });
 
-const KEY = "anchor.safetyPlan.v1";
+const KEY = "pulari.safetyPlan.v1";
+/** Pre-rename key — read once so plans saved before the Pulari rename survive. */
+const LEGACY_KEY = "anchor.safetyPlan.v1";
 /** Local event so same-tab writes notify subscribers (the native `storage`
  *  event only fires in OTHER tabs). */
-const CHANGE_EVENT = "anchor:plan-changed";
+const CHANGE_EVENT = "pulari:plan-changed";
 
 // Snapshot cache: useSyncExternalStore requires getSnapshot to return a
 // referentially stable value until the store actually changes.
@@ -59,7 +61,8 @@ let cachedPlan: SafetyPlan = EMPTY_PLAN;
 
 export function loadPlan(): SafetyPlan {
   if (typeof window === "undefined") return EMPTY_PLAN;
-  const raw = window.localStorage.getItem(KEY);
+  const raw =
+    window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY);
   if (raw === cachedRaw) return cachedPlan;
   cachedRaw = raw;
   try {

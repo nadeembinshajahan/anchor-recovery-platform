@@ -4,8 +4,8 @@ import { useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
-const THEME_KEY = "anchor.theme";
-const THEME_EVENT = "anchor:theme-changed";
+const THEME_KEY = "pulari.theme";
+const THEME_EVENT = "pulari:theme-changed";
 
 function readTheme(): Theme {
   if (typeof document === "undefined") return "light";
