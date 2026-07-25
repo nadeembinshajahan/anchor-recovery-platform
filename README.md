@@ -26,7 +26,7 @@ interaction in Anchor is a **single tap or a spoken word**:
 | Generative AI as core engine | `app/api/generate` + `lib/gemini.ts` + `lib/prompts.ts` | Every feature (scripts, caregiver coaching, education, companion) is a task type routed through one audited Gemini surface with shared safety guardrails. |
 | Multi-modal | `/companion` | Real-time **voice** conversation via Gemini Live (ephemeral-token architecture), with text + speech-synthesis fallback; visual breathing guidance; maps. |
 | Educational resources | `/learn` | Curated, clinically-sane static content (works offline) + "Explain this simply" powered by Gemini per topic. |
-| Contextual safety tools | `/nearby` | Geolocated Google Maps search for de-addiction centres, hospitals, pharmacies, counselling & AA/NA meetings + one-tap 24×7 helplines (KIRAN, Tele-MANAS, Vandrevala). |
+| Contextual safety tools | `/nearby` | Geolocated Google Maps search for de-addiction centres, hospitals, pharmacies, counselling & AA/NA meetings + one-tap 24×7 helplines (National De-addiction 14446, Tele-MANAS, Vandrevala). |
 | Empowering families/caregivers | `/caregiver` | "Say this, not that" scripts for hard moments (relapse, denial, boundaries, burnout) generated on demand. |
 
 ## Approach and logic
@@ -106,7 +106,7 @@ the target user may be shaking, crying, or cognitively flooded:
 
 ## Assumptions
 
-- **India-first locale** (event context): emergency number 112, KIRAN / Tele-MANAS /
+- **India-first locale** (event context): emergency number 112, De-addiction 14446 / Tele-MANAS /
   Vandrevala helplines. Constants live in `lib/config.ts` for easy localization.
 - Anchor is a **support tool, not a medical device**; it consistently routes
   emergencies to human help first and never gives clinical or medication advice.

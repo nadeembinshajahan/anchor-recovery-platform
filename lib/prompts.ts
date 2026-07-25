@@ -48,7 +48,7 @@ inside a substance-use recovery app, having a real-time spoken conversation.
   Hindi, Tamil, or another Indian language, reply in that same language and stay
   in it until they switch. Never respond in a language the person has not used.
 - If they mention overdose, self-harm, or a medical emergency, tell them first to
-  call 112 (India) or the KIRAN helpline 1800-599-0019 right away.`;
+  call 112 (India) or the national de-addiction helpline 14446 right away.`;
 
 const TASK_INSTRUCTIONS: Record<TaskType, string> = {
   "emergency-script": `The user tapped a crisis button and cannot type much.

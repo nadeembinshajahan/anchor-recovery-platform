@@ -17,9 +17,9 @@ export const RATE_LIMIT_PER_MINUTE = 20;
  */
 export const HELPLINES = [
   {
-    name: "KIRAN Mental Health Helpline (India, 24x7)",
-    tel: "18005990019",
-    display: "1800-599-0019",
+    name: "National De-addiction Helpline (India, 24x7)",
+    tel: "14446",
+    display: "14446",
   },
   {
     name: "Tele-MANAS (India, 24x7)",
