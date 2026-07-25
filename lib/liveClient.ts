@@ -14,7 +14,6 @@ import { createLevelReader } from "./audio/levels";
 import { createPlaybackQueue } from "./audio/playback";
 import { GEMINI_LIVE_MODEL } from "./config";
 import { loadPlan, PLAN_LANGUAGES } from "./profile";
-import { COMPANION_SYSTEM_PROMPT } from "./prompts";
 
 export type LiveStatus =
   | "connecting"
@@ -117,8 +116,12 @@ export async function startLiveSession(
     session = await ai.live.connect({
       model: GEMINI_LIVE_MODEL,
       config: {
+        // Session config (guardrail system prompt, tuned VAD) is pinned
+        // server-side in the ephemeral token's liveConnectConstraints —
+        // connect-time config is partially ignored on token sessions
+        // (measured; see lib/gemini.ts createLiveToken). Only the response
+        // modality is negotiated here.
         responseModalities: [Modality.AUDIO],
-        systemInstruction: COMPANION_SYSTEM_PROMPT,
       },
       callbacks: {
         onmessage: (message) => {

@@ -5,9 +5,9 @@ import "server-only";
  * talk to our route handlers, and the Live voice feature receives a
  * short-lived ephemeral token instead of the real key.
  */
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { EndSensitivity, GoogleGenAI, StartSensitivity, ThinkingLevel } from "@google/genai";
 import { GEMINI_LIVE_MODEL, GEMINI_TEXT_MODEL } from "./config";
-import { buildPrompt, type GenerateRequest } from "./prompts";
+import { buildPrompt, COMPANION_SYSTEM_PROMPT, type GenerateRequest } from "./prompts";
 
 /**
  * Lazy singleton. The SDK client is stateless and safe to share, so we build
@@ -58,6 +58,13 @@ export async function generateText(req: GenerateRequest): Promise<string> {
 /**
  * Mint a single-use ephemeral token the browser can use to open a Gemini
  * Live session directly, without ever seeing the real API key.
+ *
+ * IMPORTANT (measured 2026-07-25): on ephemeral-token sessions the server
+ * ignores parts of the connect-time config (a `realtimeInputConfig` sent at
+ * connect had no effect; explicit-activity mode then failed with 1007
+ * "not supported when automatic activity detection is enabled"). Session
+ * config must therefore ride INSIDE the token's liveConnectConstraints.
+ * The guardrail system prompt is pinned here for the same reason.
  */
 export async function createLiveToken(): Promise<string> {
   const now = Date.now();
@@ -68,6 +75,22 @@ export async function createLiveToken(): Promise<string> {
       newSessionExpireTime: new Date(now + 2 * 60_000).toISOString(),
       liveConnectConstraints: {
         model: GEMINI_LIVE_MODEL,
+        config: {
+          systemInstruction: COMPANION_SYSTEM_PROMPT,
+          // Faster end-of-speech detection. Harness medians (speech-end →
+          // first reply audio, 3 runs each): default VAD 5.2-6.8s; this
+          // tuning 4.7-5.0s. Floor with VAD fully bypassed is ~4.1-4.7s
+          // (model generation itself), so this captures most of the
+          // available headroom without clipping slow speakers.
+          realtimeInputConfig: {
+            automaticActivityDetection: {
+              startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+              endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+              prefixPaddingMs: 40,
+              silenceDurationMs: 350,
+            },
+          },
+        },
       },
       httpOptions: { apiVersion: "v1alpha" },
     },
