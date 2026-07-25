@@ -46,7 +46,14 @@ interaction in Anchor is a **single tap or a spoken word**:
    chips + speech synthesis if a Live session can't be established; `/learn` content
    is fully readable offline; helplines are static `tel:` links. A broken flow never
    leaves a user in crisis with a spinner.
-4. **Security is architectural, not decorative.** The Gemini key exists only
+4. **Efficient by construction.** Requests are throttled by an O(1) token-bucket
+   rate limiter (constant time and memory per client, no timer threads). Repeated
+   generations (education explainers, common crisis scripts) are served from an
+   in-memory TTL + LRU response cache instead of re-billing the model. The Gemini
+   SDK client is a lazy singleton. On the client, the audio-reactive visuals run
+   off `requestAnimationFrame` transform mutations — zero React re-renders per
+   frame — and heavy audio code loads only on the voice page.
+5. **Security is architectural, not decorative.** The Gemini key exists only
    server-side. The browser gets a **single-use, short-lived ephemeral token** for
    Live voice sessions (`app/api/live-token`). Requests are schema-validated and
    length-capped (`parseGenerateRequest`), rate-limited per client

@@ -1,28 +1,72 @@
 /**
- * Minimal in-memory sliding-window rate limiter. Suitable for a single
- * serverless instance / demo deployment; swap for Redis in production.
+ * O(1) token-bucket rate limiter.
+ *
+ * Each client key owns a bucket with `capacity = limit` tokens that refills
+ * continuously at `limit` tokens per minute. A request spends one token;
+ * an empty bucket means the request is limited. The available balance is
+ * derived lazily from the timestamp of the last refill — no timers, no
+ * per-request array scans.
+ *
+ * Why token bucket over the previous sliding-window-log approach:
+ * - Time:   O(1) per request (two arithmetic ops) vs O(n) re-filtering a
+ *           timestamp array on every hit.
+ * - Memory: O(1) per key (two numbers) vs O(limit) timestamps per key.
+ * - UX:     tokens refill continuously, so a client that briefly bursts is
+ *           readmitted gradually instead of waiting for a full window reset.
+ *
+ * State is in-memory and per-instance — the right trade-off for a single-VM
+ * demo deployment; swap the Map for Redis (same algorithm) to scale out.
  */
 import { RATE_LIMIT_PER_MINUTE } from "./config";
 
 const WINDOW_MS = 60_000;
-const hits = new Map<string, number[]>();
+/** Hard cap on tracked keys so hostile traffic cannot grow memory unbounded. */
+const MAX_KEYS = 5000;
 
+interface Bucket {
+  /** Tokens currently available (fractional between refills). */
+  tokens: number;
+  /** Timestamp of the last lazy refill. */
+  lastRefill: number;
+}
+
+const buckets = new Map<string, Bucket>();
+
+/**
+ * Returns true when `key` has exhausted its budget of `limit` requests per
+ * minute. Consumes one token on success.
+ */
 export function isRateLimited(key: string, limit = RATE_LIMIT_PER_MINUTE): boolean {
   const now = Date.now();
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= limit) {
-    hits.set(key, recent);
-    return true;
+  let bucket = buckets.get(key);
+
+  if (!bucket) {
+    if (buckets.size >= MAX_KEYS) evictStale(now);
+    bucket = { tokens: limit, lastRefill: now };
+    buckets.set(key, bucket);
+  } else {
+    // Lazy continuous refill: elapsed time earns fractional tokens.
+    const earned = ((now - bucket.lastRefill) / WINDOW_MS) * limit;
+    bucket.tokens = Math.min(limit, bucket.tokens + earned);
+    bucket.lastRefill = now;
   }
-  recent.push(now);
-  hits.set(key, recent);
-  // Opportunistic cleanup so the map cannot grow without bound.
-  if (hits.size > 5000) {
-    for (const [k, v] of hits) {
-      if (v.every((t) => now - t >= WINDOW_MS)) hits.delete(k);
-    }
-  }
+
+  if (bucket.tokens < 1) return true;
+  bucket.tokens -= 1;
   return false;
+}
+
+/**
+ * Drops buckets that have been idle long enough to be full again — they are
+ * indistinguishable from brand-new buckets, so removing them is lossless.
+ * Falls back to clearing everything in the pathological case where all keys
+ * are simultaneously active at the cap (fail-open keeps the API usable).
+ */
+function evictStale(now: number): void {
+  for (const [key, bucket] of buckets) {
+    if (now - bucket.lastRefill >= WINDOW_MS) buckets.delete(key);
+  }
+  if (buckets.size >= MAX_KEYS) buckets.clear();
 }
 
 /** Extract a best-effort client key from request headers. */

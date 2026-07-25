@@ -9,12 +9,21 @@ import { GoogleGenAI } from "@google/genai";
 import { GEMINI_LIVE_MODEL, GEMINI_TEXT_MODEL } from "./config";
 import { buildPrompt, type GenerateRequest } from "./prompts";
 
+/**
+ * Lazy singleton. The SDK client is stateless and safe to share, so we build
+ * it once on first use instead of per request. The key check stays at call
+ * time (not import time) so `next build` succeeds in CI with a placeholder.
+ */
+let cachedClient: GoogleGenAI | null = null;
+
 function client(): GoogleGenAI {
+  if (cachedClient) return cachedClient;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured");
   }
-  return new GoogleGenAI({ apiKey });
+  cachedClient = new GoogleGenAI({ apiKey });
+  return cachedClient;
 }
 
 export async function generateText(req: GenerateRequest): Promise<string> {

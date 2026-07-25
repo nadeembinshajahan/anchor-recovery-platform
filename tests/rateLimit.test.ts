@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clientKey, isRateLimited } from "@/lib/rateLimit";
 
-describe("isRateLimited", () => {
+describe("isRateLimited (token bucket)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -10,7 +10,7 @@ describe("isRateLimited", () => {
     vi.useRealTimers();
   });
 
-  it("allows requests up to the limit, then blocks", () => {
+  it("allows requests up to the limit, then blocks the next one", () => {
     const key = `test-${Math.random()}`;
     for (let i = 0; i < 5; i++) {
       expect(isRateLimited(key, 5)).toBe(false);
@@ -27,13 +27,40 @@ describe("isRateLimited", () => {
     expect(isRateLimited(b, 3)).toBe(false);
   });
 
-  it("frees the budget after the window expires", () => {
-    const key = `window-${Math.random()}`;
+  it("refills roughly half the budget after half a window", () => {
+    const key = `half-${Math.random()}`;
+    // Drain the bucket completely.
+    for (let i = 0; i < 10; i++) isRateLimited(key, 10);
+    expect(isRateLimited(key, 10)).toBe(true);
+
+    // 30s at 10 tokens/60s earns ~5 tokens (minus the one the blocked
+    // attempt above could not spend — blocking never consumes tokens).
+    vi.advanceTimersByTime(30_000);
+    for (let i = 0; i < 5; i++) {
+      expect(isRateLimited(key, 10)).toBe(false);
+    }
+    expect(isRateLimited(key, 10)).toBe(true);
+  });
+
+  it("restores the full budget after a complete idle window", () => {
+    const key = `full-${Math.random()}`;
     for (let i = 0; i < 3; i++) isRateLimited(key, 3);
     expect(isRateLimited(key, 3)).toBe(true);
 
     vi.advanceTimersByTime(61_000);
-    expect(isRateLimited(key, 3)).toBe(false);
+    for (let i = 0; i < 3; i++) {
+      expect(isRateLimited(key, 3)).toBe(false);
+    }
+    expect(isRateLimited(key, 3)).toBe(true);
+  });
+
+  it("never exceeds capacity no matter how long the idle period", () => {
+    const key = `cap-${Math.random()}`;
+    isRateLimited(key, 2);
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(isRateLimited(key, 2)).toBe(false);
+    expect(isRateLimited(key, 2)).toBe(false);
+    expect(isRateLimited(key, 2)).toBe(true);
   });
 });
 
