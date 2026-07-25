@@ -4,7 +4,7 @@ A multi-modal, GenAI-powered recovery and prevention platform for people navigat
 substance use disorders **and** the caregivers supporting them. Built for the
 PromptWars challenge (Google for Developers × Hack2Skill).
 
-**Live demo:** _deployed link here_ · **Stack:** Next.js 16 · TypeScript · Tailwind CSS 4 · Gemini API (`@google/genai`) · Google Maps
+**Live demo:** https://34.14.134.236.sslip.io · **Stack:** Next.js 16 · TypeScript · Tailwind CSS 4 · Gemini API (`@google/genai`) · Google Maps
 
 ---
 
