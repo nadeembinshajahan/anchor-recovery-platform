@@ -41,70 +41,89 @@ export default function LearnClient() {
   }
 
   return (
-    <ul className="space-y-4">
-      {LEARN_TOPICS.map((topic, i) => {
-        const state = ai[topic.id] ?? { status: "idle" };
-        return (
-          <li
-            key={topic.id}
-            className="animate-fade-up"
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <details className="glass group overflow-hidden">
-              <summary className="lift cursor-pointer list-none rounded-3xl px-6 py-5 text-lg font-semibold [&::-webkit-details-marker]:hidden">
-                <span
-                  aria-hidden="true"
-                  className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary-soft text-primary transition-transform duration-300 group-open:rotate-90"
-                >
-                  ›
-                </span>
-                {topic.title}
-              </summary>
-              <div className="space-y-5 px-6 pb-6">
-                <p className="leading-relaxed">{topic.summary}</p>
-                <ul className="space-y-2 text-sm">
-                  {topic.keyPoints.map((point) => (
-                    <li key={point} className="flex items-start gap-2.5">
-                      <span
-                        aria-hidden="true"
-                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
-                      />
-                      <span>{point}</span>
-                    </li>
-                  ))}
-                </ul>
+    <section aria-labelledby="learn-topics-heading" className="topic-library">
+      <div className="section-heading topic-library-heading">
+        <div>
+          <p className="eyebrow">Take one topic at a time</p>
+          <h2 id="learn-topics-heading">What would you like to understand?</h2>
+        </div>
+        <p>Every note is short, practical, and available without AI.</p>
+      </div>
+      <ul className="topic-list">
+        {LEARN_TOPICS.map((topic, i) => {
+          const state = ai[topic.id] ?? { status: "idle" };
+          return (
+            <li
+              key={topic.id}
+              className="topic-list-item animate-fade-up"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <details className="topic-accordion group">
+                <summary className="topic-summary lift cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <span aria-hidden="true" className="topic-number">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="topic-title">{topic.title}</span>
+                  <span aria-hidden="true" className="topic-toggle">
+                    <i />
+                    <i />
+                  </span>
+                </summary>
+                <div className="topic-body">
+                  <p className="topic-summary-copy">{topic.summary}</p>
+                  <ul className="topic-keypoints">
+                    {topic.keyPoints.map((point) => (
+                      <li key={point}>
+                        <span aria-hidden="true" className="topic-keypoint-mark">
+                          ✓
+                        </span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
 
-                <div aria-busy={state.status === "loading"} aria-live="polite">
-                  {state.status === "idle" && (
-                    <button
-                      type="button"
-                      onClick={() => explain(topic.id, topic.title, topic.summary)}
-                      className="lift rounded-full bg-primary-soft px-5 py-2.5 text-sm font-semibold text-primary-strong hover:bg-primary hover:text-white"
-                    >
-                      ✨ Explain this simply
-                    </button>
-                  )}
-                  {state.status === "loading" && (
-                    <p className="text-sm text-muted">Writing a simpler explanation…</p>
-                  )}
-                  {state.status === "done" && (
-                    <div className="rounded-2xl bg-surface-2 p-5 text-sm">
-                      <p className="eyebrow mb-2">Explained simply</p>
-                      <AiText text={state.text} />
-                    </div>
-                  )}
-                  {state.status === "error" && (
-                    <p className="text-sm text-muted">
-                      The AI explainer is unavailable right now — the notes above have you
-                      covered.
-                    </p>
-                  )}
+                  <div
+                    aria-busy={state.status === "loading"}
+                    aria-live="polite"
+                    className="topic-ai"
+                  >
+                    {state.status === "idle" && (
+                      <button
+                        type="button"
+                        onClick={() => explain(topic.id, topic.title, topic.summary)}
+                        className="sun-button sun-button-glass topic-explain lift"
+                      >
+                        <span aria-hidden="true" className="topic-spark">
+                          ✦
+                        </span>
+                        Explain this simply
+                      </button>
+                    )}
+                    {state.status === "loading" && (
+                      <p className="topic-ai-status text-sm text-muted">
+                        <span aria-hidden="true" className="topic-thinking-dot" />
+                        Writing a simpler explanation…
+                      </p>
+                    )}
+                    {state.status === "done" && (
+                      <div className="topic-ai-answer">
+                        <p className="eyebrow mb-2">Generated live with Gemini</p>
+                        <AiText text={state.text} />
+                      </div>
+                    )}
+                    {state.status === "error" && (
+                      <p className="topic-ai-status text-sm text-muted">
+                        The AI explainer is unavailable right now — the notes above have
+                        you covered.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </details>
-          </li>
-        );
-      })}
-    </ul>
+              </details>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

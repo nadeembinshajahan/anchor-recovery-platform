@@ -3,10 +3,10 @@
 /**
  * Audio-reactive orb for the voice companion.
  *
- * Layered radial gradients form an organic sphere: a teal core that swells
- * with the USER's microphone level while listening, and a warm amber halo +
- * glow that swell with the MODEL's voice while it speaks. Two thin rings
- * ripple outward during model speech.
+ * Layered radial gradients form a warm, sunlit sphere: the grounded primary
+ * aura swells with the USER's microphone level while listening, and an amber
+ * halo swells with the MODEL's voice while it speaks. Two thin rings ripple
+ * outward during model speech.
  *
  * Animation strategy: one requestAnimationFrame loop mutates transforms and
  * opacities directly on element refs — React state is never touched per
@@ -26,7 +26,7 @@ interface VoiceOrbProps {
 }
 
 export default function VoiceOrb({ state, getLevels }: VoiceOrbProps) {
-  const glowTealRef = useRef<HTMLDivElement>(null);
+  const glowPrimaryRef = useRef<HTMLDivElement>(null);
   const glowAmberRef = useRef<HTMLDivElement>(null);
   const haloRef = useRef<HTMLDivElement>(null);
   const coreRef = useRef<HTMLDivElement>(null);
@@ -34,7 +34,7 @@ export default function VoiceOrb({ state, getLevels }: VoiceOrbProps) {
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const active = state === "listening" || state === "speaking";
-    const layers = [glowTealRef, glowAmberRef, haloRef, coreRef];
+    const layers = [glowPrimaryRef, glowAmberRef, haloRef, coreRef];
 
     if (!active || !getLevels || reduceMotion) {
       // Hand control back to the CSS ambient animations.
@@ -64,9 +64,9 @@ export default function VoiceOrb({ state, getLevels }: VoiceOrbProps) {
       if (haloRef.current) {
         haloRef.current.style.transform = `scale(${1.02 + wobble * 1.5 + voice * (listening ? 0.1 : 0.3)})`;
       }
-      if (glowTealRef.current) {
-        glowTealRef.current.style.opacity = String(listening ? 0.4 + input * 0.6 : 0.16);
-        glowTealRef.current.style.transform = `scale(${1.05 + input * 0.35})`;
+      if (glowPrimaryRef.current) {
+        glowPrimaryRef.current.style.opacity = String(listening ? 0.4 + input * 0.6 : 0.16);
+        glowPrimaryRef.current.style.transform = `scale(${1.05 + input * 0.35})`;
       }
       if (glowAmberRef.current) {
         glowAmberRef.current.style.opacity = String(!listening ? 0.42 + output * 0.58 : 0.14);
@@ -79,13 +79,28 @@ export default function VoiceOrb({ state, getLevels }: VoiceOrbProps) {
   }, [state, getLevels]);
 
   return (
-    <div className="orb-root" data-state={state} aria-hidden="true">
+    <div className="voice-orb orb-root" data-state={state} aria-hidden="true">
       <style>{`
         .orb-root {
+          --orb-ease: cubic-bezier(0.22, 1, 0.36, 1);
           position: relative;
-          width: min(260px, 60vw);
+          width: min(17.5rem, 68vw);
           aspect-ratio: 1;
           margin-inline: auto;
+          isolation: isolate;
+        }
+        .orb-root::after {
+          content: "";
+          position: absolute;
+          z-index: -2;
+          left: 22%;
+          right: 22%;
+          bottom: -2%;
+          height: 13%;
+          border-radius: 50%;
+          background: color-mix(in srgb, var(--accent) 28%, transparent);
+          filter: blur(18px);
+          opacity: 0.52;
         }
         .orb-layer {
           position: absolute;
@@ -93,62 +108,113 @@ export default function VoiceOrb({ state, getLevels }: VoiceOrbProps) {
           border-radius: 50%;
           will-change: transform, opacity;
         }
-        .orb-glow-teal {
-          background: radial-gradient(circle,
-            color-mix(in srgb, var(--primary) 55%, transparent) 0%,
-            transparent 70%);
-          filter: blur(26px);
-          opacity: 0.18;
-          transition: opacity 400ms ease;
+        .orb-aura {
+          z-index: -1;
+          transition:
+            opacity 500ms var(--orb-ease),
+            transform 500ms var(--orb-ease);
         }
-        .orb-glow-amber {
+        .orb-aura-primary {
           background: radial-gradient(circle,
-            color-mix(in srgb, var(--accent) 55%, transparent) 0%,
-            transparent 70%);
+            color-mix(in srgb, var(--primary) 38%, transparent) 0%,
+            color-mix(in srgb, var(--primary) 14%, transparent) 43%,
+            transparent 72%);
           filter: blur(30px);
-          opacity: 0.14;
-          transition: opacity 400ms ease;
+          opacity: 0.2;
+        }
+        .orb-aura-sun {
+          background: radial-gradient(circle,
+            color-mix(in srgb, var(--accent) 52%, transparent) 0%,
+            color-mix(in srgb, var(--accent) 16%, transparent) 48%,
+            transparent 74%);
+          filter: blur(36px);
+          opacity: 0.32;
+        }
+        .orb-orbit {
+          position: absolute;
+          border-radius: 50%;
+          border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+          pointer-events: none;
+          opacity: 0.72;
+        }
+        .orb-orbit-a {
+          inset: 5%;
+          transform: rotate(-12deg) scaleY(0.93);
+        }
+        .orb-orbit-b {
+          inset: 9%;
+          border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+          transform: rotate(22deg) scaleX(0.95);
         }
         .orb-halo {
-          inset: 4%;
-          background: radial-gradient(circle at 62% 68%,
-            color-mix(in srgb, var(--accent) 42%, transparent) 0%,
-            color-mix(in srgb, var(--accent) 16%, transparent) 45%,
-            transparent 72%);
-          opacity: 0.55;
-          transition: opacity 500ms ease;
+          inset: 7%;
+          border: 1px solid color-mix(in srgb, white 56%, transparent);
+          background:
+            radial-gradient(circle at 70% 72%,
+              color-mix(in srgb, var(--accent) 34%, transparent) 0%,
+              transparent 48%),
+            radial-gradient(circle at 28% 30%,
+              color-mix(in srgb, white 56%, transparent) 0%,
+              transparent 38%);
+          box-shadow:
+            inset 0 0 34px color-mix(in srgb, white 22%, transparent),
+            0 0 0 8px color-mix(in srgb, white 8%, transparent);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          opacity: 0.68;
+          transition: opacity 500ms var(--orb-ease);
         }
         .orb-root[data-state="speaking"] .orb-halo { opacity: 0.95; }
         .orb-core {
-          inset: 12%;
-          background: radial-gradient(circle at 36% 30%,
-            color-mix(in srgb, var(--primary) 34%, white) 0%,
-            color-mix(in srgb, var(--primary) 88%, transparent) 48%,
-            var(--primary-strong) 100%);
+          inset: 16%;
+          overflow: hidden;
+          border: 1px solid color-mix(in srgb, white 74%, transparent);
+          background:
+            radial-gradient(circle at 31% 24%,
+              rgba(255, 255, 255, 0.96) 0%,
+              rgba(255, 255, 255, 0.52) 8%,
+              transparent 27%),
+            radial-gradient(circle at 48% 40%,
+              color-mix(in srgb, var(--accent) 18%, white) 0%,
+              color-mix(in srgb, var(--accent) 72%, #fff4d2) 56%,
+              color-mix(in srgb, var(--primary) 48%, var(--accent)) 100%);
           box-shadow:
-            inset 0 -18px 40px color-mix(in srgb, var(--primary-strong) 55%, transparent),
-            0 10px 40px color-mix(in srgb, var(--primary) 28%, transparent);
-        }
-        @media (prefers-color-scheme: dark) {
-          .orb-core {
-            background: radial-gradient(circle at 36% 30%,
-              color-mix(in srgb, var(--primary) 75%, white) 0%,
-              color-mix(in srgb, var(--primary) 45%, transparent) 52%,
-              color-mix(in srgb, var(--primary-strong) 30%, transparent) 100%);
-          }
+            inset -18px -22px 42px color-mix(in srgb, var(--primary-strong) 24%, transparent),
+            inset 14px 16px 32px color-mix(in srgb, white 34%, transparent),
+            0 16px 42px color-mix(in srgb, var(--accent) 27%, transparent),
+            0 5px 18px color-mix(in srgb, var(--primary) 15%, transparent);
         }
         .orb-gloss {
-          inset: 12%;
-          background: radial-gradient(circle at 32% 22%,
-            rgba(255, 255, 255, 0.55) 0%,
-            rgba(255, 255, 255, 0.08) 26%,
-            transparent 45%);
+          inset: 16%;
+          background:
+            radial-gradient(ellipse at 34% 24%,
+              rgba(255, 255, 255, 0.66) 0%,
+              rgba(255, 255, 255, 0.12) 29%,
+              transparent 48%),
+            linear-gradient(138deg,
+              transparent 52%,
+              rgba(255, 255, 255, 0.15) 67%,
+              transparent 80%);
+          mix-blend-mode: screen;
+        }
+        .orb-spark {
+          position: absolute;
+          z-index: 3;
+          width: 8px;
+          aspect-ratio: 1;
+          border-radius: 50%;
+          top: 25%;
+          left: 29%;
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow:
+            0 0 0 6px rgba(255, 255, 255, 0.13),
+            0 0 18px rgba(255, 255, 255, 0.8);
         }
         .orb-ring {
           position: absolute;
           inset: 2%;
           border-radius: 50%;
-          border: 1.5px solid color-mix(in srgb, var(--accent) 65%, transparent);
+          border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
           opacity: 0;
           pointer-events: none;
         }
@@ -156,43 +222,58 @@ export default function VoiceOrb({ state, getLevels }: VoiceOrbProps) {
           animation: orb-ripple 2s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
         }
         .orb-root[data-state="speaking"] .orb-ring-b {
-          animation-delay: 1s;
-          border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+          animation-delay: 1.1s;
+          border-color: color-mix(in srgb, var(--primary) 42%, transparent);
         }
         .orb-root[data-state="idle"] .orb-core,
-        .orb-root[data-state="idle"] .orb-gloss {
+        .orb-root[data-state="idle"] .orb-gloss,
+        .orb-root[data-state="idle"] .orb-spark {
           animation: orb-float 7s ease-in-out infinite;
         }
         .orb-root[data-state="idle"] .orb-halo {
           animation: orb-float 7s ease-in-out -3.5s infinite;
         }
         .orb-root[data-state="connecting"] .orb-core,
-        .orb-root[data-state="connecting"] .orb-gloss {
+        .orb-root[data-state="connecting"] .orb-gloss,
+        .orb-root[data-state="connecting"] .orb-spark {
           animation: orb-pulse 1.5s ease-in-out infinite;
+        }
+        .orb-root[data-state="listening"] .orb-orbit-b {
+          border-color: color-mix(in srgb, var(--primary) 46%, transparent);
+        }
+        .orb-root[data-state="speaking"] .orb-orbit-a {
+          border-color: color-mix(in srgb, var(--accent) 68%, transparent);
         }
         @keyframes orb-float {
           0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-7px) scale(1.035); }
+          50% { transform: translateY(-6px) scale(1.025); }
         }
         @keyframes orb-pulse {
-          0%, 100% { transform: scale(0.96); opacity: 0.85; }
-          50% { transform: scale(1.03); opacity: 1; }
+          0%, 100% { transform: scale(0.97); opacity: 0.88; }
+          50% { transform: scale(1.025); opacity: 1; }
         }
         @keyframes orb-ripple {
-          0% { transform: scale(0.95); opacity: 0.75; }
-          100% { transform: scale(1.45); opacity: 0; }
+          0% { transform: scale(0.92); opacity: 0.68; }
+          100% { transform: scale(1.38); opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .orb-root * { animation: none !important; transition: none !important; }
+          .orb-root *,
+          .orb-root::after {
+            animation: none !important;
+            transition: none !important;
+          }
         }
       `}</style>
-      <div ref={glowTealRef} className="orb-layer orb-glow-teal" />
-      <div ref={glowAmberRef} className="orb-layer orb-glow-amber" />
+      <div ref={glowPrimaryRef} className="orb-layer orb-aura orb-aura-primary" />
+      <div ref={glowAmberRef} className="orb-layer orb-aura orb-aura-sun" />
+      <span className="orb-orbit orb-orbit-a" />
+      <span className="orb-orbit orb-orbit-b" />
       <span className="orb-ring" />
       <span className="orb-ring orb-ring-b" />
       <div ref={haloRef} className="orb-layer orb-halo" />
       <div ref={coreRef} className="orb-layer orb-core" />
       <div className="orb-layer orb-gloss" />
+      <span className="orb-spark" />
     </div>
   );
 }

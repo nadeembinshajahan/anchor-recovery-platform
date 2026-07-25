@@ -23,7 +23,7 @@ const PRESET_TOOLS = [
 const PHONE_PATTERN = /^\+?[\d\s-]{7,17}$/;
 
 const FIELD_CLASSES =
-  "w-full rounded-xl border border-card-border bg-surface-2 px-3.5 py-2.5 text-foreground placeholder:text-muted/70 transition focus:border-primary";
+  "plan-input w-full text-foreground placeholder:text-muted/70 transition";
 
 function isValidPhone(value: string): boolean {
   if (!value) return true; // optional field
@@ -38,16 +38,6 @@ export default function PlanForm() {
   const [phoneError, setPhoneError] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
   const [clearArmed, setClearArmed] = useState(false);
-
-  // Wait for localStorage before rendering values to avoid a hydration
-  // mismatch between server (empty plan) and client (stored plan).
-  if (!ready) {
-    return (
-      <p role="status" className="glass p-6 text-muted">
-        Loading your plan…
-      </p>
-    );
-  }
 
   const current = draft ?? plan;
 
@@ -98,80 +88,111 @@ export default function PlanForm() {
   );
 
   return (
-    <form onSubmit={handleSave} noValidate className="glass space-y-8 p-8">
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="plan-name" className="block text-sm font-semibold">
-            Your name
-          </label>
-          <input
-            id="plan-name"
-            type="text"
-            value={current.name}
-            onChange={(e) => set({ name: e.target.value })}
-            maxLength={100}
-            autoComplete="given-name"
-            className={FIELD_CLASSES}
-          />
+    <form
+      onSubmit={handleSave}
+      noValidate
+      aria-busy={!ready}
+      className="plan-form"
+    >
+      {!ready && (
+        <p role="status" className="plan-ready-status">
+          <span aria-hidden="true" className="plan-ready-dot" />
+          Loading saved details from this device…
+        </p>
+      )}
+      <section aria-labelledby="plan-details-heading" className="plan-section plan-details-section">
+        <div className="plan-section-heading">
+          <span aria-hidden="true" className="plan-step">
+            01
+          </span>
+          <div>
+            <p className="eyebrow">A little context</p>
+            <h2 id="plan-details-heading">Make support feel like yours</h2>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="plan-substance" className="block text-sm font-semibold">
-            What you&apos;re moving away from
-          </label>
-          <input
-            id="plan-substance"
-            type="text"
-            value={current.substance}
-            onChange={(e) => set({ substance: e.target.value })}
-            maxLength={100}
-            placeholder="e.g. alcohol"
-            className={FIELD_CLASSES}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="plan-supporter" className="block text-sm font-semibold">
-            Trusted person&apos;s name
-          </label>
-          <input
-            id="plan-supporter"
-            type="text"
-            value={current.supporter}
-            onChange={(e) => set({ supporter: e.target.value })}
-            maxLength={100}
-            placeholder="e.g. my brother Arun"
-            className={FIELD_CLASSES}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="plan-phone" className="block text-sm font-semibold">
-            Their phone number
-          </label>
-          <input
-            id="plan-phone"
-            type="tel"
-            value={current.supporterPhone}
-            onChange={(e) => {
-              set({ supporterPhone: e.target.value });
-              if (phoneError) setPhoneError(!isValidPhone(e.target.value));
-            }}
-            maxLength={17}
-            autoComplete="tel"
-            aria-invalid={phoneError}
-            aria-describedby={phoneError ? "plan-phone-error" : undefined}
-            placeholder="+91 98765 43210"
-            className={`${FIELD_CLASSES} ${phoneError ? "border-danger" : ""}`}
-          />
-          {phoneError && (
-            <p id="plan-phone-error" role="alert" className="text-sm font-medium text-danger">
-              That doesn&apos;t look like a phone number — use 7 to 15 digits, e.g. +91 98765 43210.
-            </p>
-          )}
-        </div>
-      </div>
 
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold">Coping tools that work for you</legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="plan-field-grid">
+          <div className="plan-field">
+            <label htmlFor="plan-name">Your name</label>
+            <input
+              id="plan-name"
+              type="text"
+              value={current.name}
+              onChange={(e) => set({ name: e.target.value })}
+              maxLength={100}
+              autoComplete="given-name"
+              className={FIELD_CLASSES}
+            />
+          </div>
+          <div className="plan-field">
+            <label htmlFor="plan-substance">What you&apos;re moving away from</label>
+            <input
+              id="plan-substance"
+              type="text"
+              value={current.substance}
+              onChange={(e) => set({ substance: e.target.value })}
+              maxLength={100}
+              placeholder="e.g. alcohol"
+              className={FIELD_CLASSES}
+            />
+          </div>
+          <div className="plan-field">
+            <label htmlFor="plan-supporter">Trusted person&apos;s name</label>
+            <input
+              id="plan-supporter"
+              type="text"
+              value={current.supporter}
+              onChange={(e) => set({ supporter: e.target.value })}
+              maxLength={100}
+              placeholder="e.g. my brother Arun"
+              className={FIELD_CLASSES}
+            />
+          </div>
+          <div className="plan-field">
+            <label htmlFor="plan-phone">Their phone number</label>
+            <input
+              id="plan-phone"
+              type="tel"
+              value={current.supporterPhone}
+              onChange={(e) => {
+                set({ supporterPhone: e.target.value });
+                if (phoneError) setPhoneError(!isValidPhone(e.target.value));
+              }}
+              maxLength={17}
+              autoComplete="tel"
+              aria-invalid={phoneError}
+              aria-describedby={
+                phoneError
+                  ? "plan-phone-privacy plan-phone-error"
+                  : "plan-phone-privacy"
+              }
+              placeholder="+91 98765 43210"
+              className={`${FIELD_CLASSES} ${phoneError ? "plan-input-error" : ""}`}
+            />
+            <p id="plan-phone-privacy" className="plan-field-note text-sm text-muted">
+              This number stays on this device and is never sent to Gemini.
+            </p>
+            {phoneError && (
+              <p id="plan-phone-error" role="alert" className="plan-field-error">
+                That doesn&apos;t look like a phone number — use 7 to 15 digits, e.g. +91
+                98765 43210.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <fieldset className="plan-section plan-tools-section">
+        <legend className="plan-section-heading">
+          <span aria-hidden="true" className="plan-step">
+            02
+          </span>
+          <span className="plan-legend-copy">
+            <span className="eyebrow">Your go-to actions</span>
+            <strong>Coping tools that work for you</strong>
+          </span>
+        </legend>
+        <div className="plan-tools">
           {PRESET_TOOLS.map((tool) => {
             const active = current.copingTools.includes(tool);
             return (
@@ -180,12 +201,11 @@ export default function PlanForm() {
                 type="button"
                 onClick={() => toggleTool(tool)}
                 aria-pressed={active}
-                className={`lift rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  active
-                    ? "bg-primary-soft text-primary-strong shadow-sm ring-1 ring-primary/30"
-                    : "bg-surface-2 text-muted ring-1 ring-card-border hover:text-foreground"
-                }`}
+                className={`plan-tool lift ${active ? "plan-tool-active" : ""}`}
               >
+                <span aria-hidden="true" className="plan-tool-check">
+                  ✓
+                </span>
                 {tool}
               </button>
             );
@@ -196,14 +216,21 @@ export default function PlanForm() {
               type="button"
               onClick={() => toggleTool(tool)}
               aria-pressed={true}
+              aria-label={`Remove coping tool: ${tool}`}
               title="Tap to remove"
-              className="lift rounded-full bg-primary-soft px-4 py-2 text-sm font-semibold text-primary-strong shadow-sm ring-1 ring-primary/30"
+              className="plan-tool plan-tool-active plan-tool-custom lift"
             >
-              {tool} ✕
+              <span aria-hidden="true" className="plan-tool-check">
+                ✓
+              </span>
+              {tool}
+              <span aria-hidden="true" className="plan-tool-remove">
+                ×
+              </span>
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="plan-custom-tool">
           <label htmlFor="plan-custom-tool" className="sr-only">
             Add your own coping tool
           </label>
@@ -220,43 +247,39 @@ export default function PlanForm() {
             }}
             maxLength={100}
             placeholder="Add your own…"
-            className={`${FIELD_CLASSES} max-w-xs text-sm`}
+            className={`${FIELD_CLASSES} plan-custom-input`}
           />
           <button
             type="button"
             onClick={addCustomTool}
-            className="lift rounded-xl px-4 py-2 text-sm font-semibold text-primary ring-1 ring-primary/40 hover:bg-primary-soft"
+            className="plan-add-tool lift"
           >
+            <span aria-hidden="true">+</span>
             Add
           </button>
         </div>
       </fieldset>
 
-      <div className="flex flex-wrap items-center gap-4 border-t border-card-border pt-6">
-        <button
-          type="submit"
-          className="lift rounded-full bg-primary px-7 py-3 font-bold text-white hover:bg-primary-strong"
-        >
-          Save my plan
-        </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          onBlur={() => setClearArmed(false)}
-          className={`lift rounded-full px-6 py-3 font-semibold transition ${
-            clearArmed
-              ? "bg-danger text-white"
-              : "text-muted ring-1 ring-card-border hover:text-danger hover:ring-danger/50"
-          }`}
-        >
-          {clearArmed ? "Tap again to confirm" : "Clear my data"}
-        </button>
+      <div className="plan-actions">
+        <div className="plan-actions-buttons">
+          <button type="submit" className="sun-button sun-button-primary plan-save lift">
+            Save my plan
+            <span aria-hidden="true">→</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            onBlur={() => setClearArmed(false)}
+            className={`plan-clear lift ${clearArmed ? "plan-clear-armed" : ""}`}
+          >
+            {clearArmed ? "Tap again to confirm" : "Clear my data"}
+          </button>
+        </div>
         <p
           aria-live="polite"
-          className={`text-sm font-semibold ${
-            savedMessage ? "rounded-full bg-primary-soft px-4 py-2 text-primary-strong" : "text-primary"
-          }`}
+          className={`plan-save-status ${savedMessage ? "plan-save-status-visible" : ""}`}
         >
+          {savedMessage && <span aria-hidden="true">✓</span>}
           {savedMessage}
         </p>
       </div>

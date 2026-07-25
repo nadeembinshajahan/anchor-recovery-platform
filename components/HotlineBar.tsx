@@ -8,34 +8,34 @@ export default function HotlineBar() {
   return (
     <aside
       aria-label="Crisis helplines"
-      className="glass w-full rounded-none border-x-0 border-b-0 border-t border-danger/20 px-4 py-2.5"
-      style={{ background: "var(--danger-soft)" }}
+      className="hotline-dock"
     >
-      <p className="text-center text-sm">
-        <span className="font-semibold">In immediate danger? Call </span>
-        <a href="tel:112" className="font-bold text-danger underline underline-offset-2">
-          112
-        </a>
-        <span className="mx-1.5 text-muted" aria-hidden="true">
-          ·
+      <div className="hotline-inner">
+        <span className="human-help">
+          <span className="human-help-dot" aria-hidden="true" />
+          Human help is always here
         </span>
-        {HELPLINES.map((h, i) => (
-          <span key={h.tel}>
-            {i > 0 && (
-              <span className="mx-1.5 text-muted" aria-hidden="true">
-                ·
-              </span>
-            )}
+        <span className="hotline-divider" aria-hidden="true" />
+        <span className="emergency-copy">
+          In immediate danger?{" "}
+          <a href="tel:112">
+            Call 112
+          </a>
+        </span>
+        <div className="hotline-links" aria-label="Additional helplines">
+          {HELPLINES.map((h) => (
             <a
+              key={h.tel}
               href={`tel:${h.tel}`}
-              className="whitespace-nowrap font-medium underline underline-offset-2 hover:text-danger"
+              className="hotline-link"
               title={h.name}
+              aria-label={`${h.name}: ${h.display}`}
             >
               {h.display}
             </a>
-          </span>
-        ))}
-      </p>
+          ))}
+        </div>
+      </div>
     </aside>
   );
 }

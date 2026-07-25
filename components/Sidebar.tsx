@@ -103,47 +103,51 @@ export default function Sidebar() {
   return (
     <nav
       aria-label="Main navigation"
-      className="glass flex shrink-0 gap-1 overflow-x-auto p-3 lg:sticky lg:top-6 lg:h-[calc(100svh-9rem)] lg:w-60 lg:flex-col lg:overflow-x-visible"
+      className="sun-nav"
     >
       <Link
         href="/"
-        className="mb-0 hidden items-center gap-2 px-3 py-4 text-xl font-bold tracking-tight lg:flex"
+        className="brand-home"
       >
-        <span
-          aria-hidden="true"
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-sm"
-        >
-          ⚓
+        <span aria-hidden="true" className="brand-mark">
+          <span className="brand-sun" />
+          <span className="brand-horizon" />
         </span>
-        Anchor
+        <span className="brand-copy">
+          <strong>Anchor</strong>
+          <small>A steadier moment</small>
+        </span>
       </Link>
-      <p className="eyebrow hidden px-3 pb-2 lg:block">Main</p>
-      {NAV.map((item) => {
-        const active =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={`lift flex shrink-0 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium ${
-              active
-                ? "bg-primary-soft text-primary-strong shadow-sm"
-                : "text-muted hover:bg-surface-2 hover:text-foreground"
-            }`}
-          >
-            {item.icon}
-            <span className="whitespace-nowrap">{item.label}</span>
-          </Link>
-        );
-      })}
-      <div className="hidden flex-1 lg:block" />
-      <Link
-        href="/sos"
-        className="lift hidden items-center justify-center gap-2 rounded-2xl bg-danger px-4 py-3 text-sm font-bold text-white lg:flex"
-      >
-        SOS — I need help now
-      </Link>
+
+      <div className="nav-scroll">
+        <p className="nav-label">Explore</p>
+        {NAV.map((item) => {
+          const active =
+            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={`nav-item lift ${active ? "nav-item-active" : ""}`}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="whitespace-nowrap">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="nav-spacer" />
+      <div className="nav-care">
+        <span className="nav-care-sun" aria-hidden="true" />
+        <p>Hard moment?</p>
+        <span>You can start with one tap.</span>
+        <Link href="/sos" className="nav-sos lift">
+          Get support now
+          <span aria-hidden="true">→</span>
+        </Link>
+      </div>
     </nav>
   );
 }

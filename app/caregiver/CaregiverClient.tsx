@@ -45,63 +45,97 @@ export default function CaregiverClient() {
 
   useEffect(() => {
     if (situation) headingRef.current?.focus();
-  }, [situation, result.status]);
+  }, [situation]);
 
   return (
-    <div className="space-y-6">
+    <div className="caregiver-flow">
       {!situation ? (
-        <section aria-label="Pick your situation" className="grid gap-5 sm:grid-cols-2">
-          {CAREGIVER_SITUATIONS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => choose(s)}
-              className="glass lift animate-fade-up min-h-28 p-6 text-left"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <span className="block text-lg font-semibold">{s.label}</span>
-              <span className="mt-1.5 block text-sm leading-relaxed text-muted">
-                {s.context}
-              </span>
-            </button>
-          ))}
+        <section aria-labelledby="caregiver-situations-heading" className="caregiver-picker">
+          <div className="section-heading caregiver-picker-heading">
+            <div>
+              <p className="eyebrow">Start with what is happening</p>
+              <h2 id="caregiver-situations-heading">Choose the closest situation</h2>
+            </div>
+            <p>You’ll get words you can use and a calmer next step.</p>
+          </div>
+          <div className="caregiver-choice-grid">
+            {CAREGIVER_SITUATIONS.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => choose(s)}
+                className="caregiver-choice lift animate-fade-up"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <span aria-hidden="true" className="caregiver-choice-number">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="caregiver-choice-copy">
+                  <span className="caregiver-choice-title">{s.label}</span>
+                  <span className="caregiver-choice-context">{s.context}</span>
+                </span>
+                <span aria-hidden="true" className="caregiver-choice-arrow">
+                  ↗
+                </span>
+              </button>
+            ))}
+          </div>
         </section>
       ) : (
-        <section aria-busy={result.status === "loading"} className="animate-fade-up space-y-5">
-          <div className="flex items-center justify-between gap-4">
-            <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight">
-              {situation.label}
-            </h2>
+        <section
+          aria-busy={result.status === "loading"}
+          className="caregiver-result animate-fade-up"
+        >
+          <div className="caregiver-result-heading">
+            <div>
+              <p className="eyebrow">A steadier way through</p>
+              <h2 ref={headingRef} tabIndex={-1}>
+                {situation.label}
+              </h2>
+            </div>
             <button
               type="button"
               onClick={() => setSituation(null)}
-              className="lift shrink-0 rounded-full bg-surface-2 px-4 py-2 text-sm font-semibold text-muted hover:text-foreground"
+              className="caregiver-back sun-button sun-button-glass lift"
             >
               ← Other situations
             </button>
           </div>
 
-          <div className="glass p-7">
-            <p className="eyebrow mb-3">For this moment</p>
+          <div
+            className="caregiver-script"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className="caregiver-script-label">
+              <span aria-hidden="true">✦</span>
+              <p className="eyebrow">For this moment</p>
+            </div>
             {result.status === "loading" && (
-              <p className="text-muted" aria-live="polite">
+              <p className="caregiver-script-status text-muted" aria-live="polite">
+                <span aria-hidden="true" className="caregiver-thinking-dot" />
                 Writing a script for this situation…
               </p>
             )}
-            {result.status === "done" && <AiText text={result.text} />}
+            {result.status === "done" && (
+              <div className="caregiver-script-answer">
+                <p className="eyebrow">Generated live with Gemini</p>
+                <AiText text={result.text} />
+              </div>
+            )}
             {result.status === "error" && (
-              <div className="space-y-3">
+              <div className="caregiver-fallback">
                 <p className="text-sm text-muted" aria-live="polite">
                   The AI script writer is unavailable right now — these fundamentals apply
                   to almost every situation:
                 </p>
-                <ul className="space-y-2.5">
+                <ul className="caregiver-fallback-list">
                   {CAREGIVER_FALLBACK_TIPS.map((tip) => (
-                    <li key={tip} className="flex items-start gap-2.5">
-                      <span
-                        aria-hidden="true"
-                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
-                      />
+                    <li key={tip}>
+                      <span aria-hidden="true" className="caregiver-tip-mark">
+                        ✓
+                      </span>
                       <span>{tip}</span>
                     </li>
                   ))}
@@ -113,31 +147,36 @@ export default function CaregiverClient() {
       )}
 
       <section
-        aria-label="In a crisis"
-        className="glass p-6"
-        style={{ background: "var(--accent-soft)" }}
+        aria-labelledby="caregiver-crisis-heading"
+        className="crisis-panel"
       >
-        <p className="eyebrow mb-2">In a crisis</p>
-        <p className="text-sm leading-relaxed text-muted">
-          If they are unresponsive, having a seizure, or you fear an overdose, act now —
-          don&apos;t wait it out.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2.5">
+        <div aria-hidden="true" className="crisis-panel-icon">
+          !
+        </div>
+        <div className="crisis-panel-copy">
+          <p className="eyebrow">Urgent safety</p>
+          <h2 id="caregiver-crisis-heading">In a crisis</h2>
+          <p>
+            If they are unresponsive, having a seizure, or you fear an overdose, act now —
+            don&apos;t wait it out.
+          </p>
+        </div>
+        <div className="crisis-panel-actions">
           <a
             href="tel:112"
-            className="lift rounded-full bg-danger px-5 py-2.5 text-sm font-bold text-white"
+            className="crisis-action crisis-action-primary lift"
           >
             Call 112
           </a>
           <a
-            href="tel:18005990019"
-            className="lift rounded-full bg-surface-solid px-5 py-2.5 text-sm font-semibold shadow-soft"
+            href="tel:14446"
+            className="crisis-action lift"
           >
-            KIRAN 1800-599-0019
+            De-addiction helpline 14446
           </a>
           <Link
             href="/nearby"
-            className="lift rounded-full bg-surface-solid px-5 py-2.5 text-sm font-semibold text-primary shadow-soft"
+            className="crisis-action crisis-action-link lift"
           >
             Find help nearby →
           </Link>

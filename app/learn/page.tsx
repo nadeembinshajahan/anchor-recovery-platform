@@ -9,16 +9,27 @@ export const metadata: Metadata = {
 
 export default function LearnPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="glass p-8">
-        <p className="eyebrow">Education</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">Understand recovery</h1>
-        <p className="mt-3 text-muted">
-          Short, honest explanations of what recovery actually involves. Open a topic, and
-          if anything feels unclear, tap <strong>Explain this simply</strong> for a fresh
-          plain-language take.
-        </p>
-      </div>
+    <div className="route-page route-page-learn mx-auto max-w-4xl">
+      <header className="route-intro route-intro-learn">
+        <div className="route-intro-copy">
+          <p className="eyebrow">Education</p>
+          <h1>Understand recovery</h1>
+          <p className="route-intro-lede">
+            Short, honest explanations of what recovery actually involves. Open a topic,
+            and if anything feels unclear, tap <strong>Explain this simply</strong> for a
+            fresh plain-language take.
+          </p>
+        </div>
+        <div className="route-intro-art learn-intro-art" aria-hidden="true">
+          <span className="learn-sun" />
+          <span className="learn-page-sheet learn-page-sheet-back" />
+          <span className="learn-page-sheet learn-page-sheet-front">
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
+      </header>
       <LearnClient />
     </div>
   );

@@ -4,21 +4,32 @@ import PlanForm from "./PlanForm";
 export const metadata: Metadata = {
   title: "My safety plan",
   description:
-    "Store your coping tools and trusted contact on this device to personalize every intervention.",
+    "Create a locally stored safety plan that can personalize support, with clear controls over what may be shared with Gemini.",
 };
 
 export default function PlanPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <header className="glass p-8">
-        <p className="eyebrow">Personalization</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">My safety plan</h1>
-        <p className="mt-3 text-muted">
-          A few details make your SOS scripts and voice companion personal — your name,
-          your go-to coping tools, the person you trust. Everything here is stored{" "}
-          <strong className="font-semibold text-foreground">only on this device</strong>:
-          it is never uploaded, and you can clear it anytime.
-        </p>
+    <div className="route-page route-page-plan mx-auto max-w-4xl">
+      <header className="route-intro route-intro-plan">
+        <div className="route-intro-copy">
+          <p className="eyebrow">Personalization</p>
+          <h1>My safety plan</h1>
+          <p className="route-intro-lede">
+            A few details make your SOS scripts and tap-to-talk replies personal — your
+            name, your go-to coping tools, the person you trust. Your plan is saved on
+            this device and can be cleared anytime. When you request personalized AI
+            support, your name, recovery focus, trusted person&apos;s name, and coping
+            tools may be sent to Google Gemini to create the response.{" "}
+            <strong>Your trusted person&apos;s phone number stays on this device.</strong>
+          </p>
+        </div>
+        <div className="route-intro-art plan-intro-art" aria-hidden="true">
+          <span className="plan-sun" />
+          <span className="plan-shield">
+            <i />
+          </span>
+          <span className="plan-private-note">saved locally</span>
+        </div>
       </header>
       <PlanForm />
     </div>

@@ -79,34 +79,58 @@ export default function SosFlow() {
 
   if (!situation) {
     return (
-      <div className="space-y-6">
-        <section className="glass p-8 text-center">
-          <p className="eyebrow">You&apos;re in the right place</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">
-            What&apos;s happening right now?
-          </h1>
-          <p className="mt-2 text-muted">Tap the closest one. No typing needed.</p>
+      <div className="sos-flow sos-picker space-y-7">
+        <section className="sos-intro glass overflow-hidden px-6 py-9 text-center sm:px-10 sm:py-11">
+          <div className="sos-intro-copy">
+            <p className="eyebrow sos-kicker">
+              <span className="sos-kicker-dot" aria-hidden="true" />
+              You&apos;re in the right place
+            </p>
+            <h1 className="sos-intro-title mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+              What&apos;s happening right now?
+            </h1>
+            <p className="sos-intro-lede mx-auto mt-3 max-w-lg text-muted">
+              Choose what feels closest. We&apos;ll take the next step together.
+            </p>
+            <div className="sos-assurances" aria-label="How this works">
+              <span>
+                <i aria-hidden="true">✓</i> One tap
+              </span>
+              <span>
+                <i aria-hidden="true">✓</i> No judgment
+              </span>
+              <span>
+                <i aria-hidden="true">✓</i> No typing
+              </span>
+            </div>
+          </div>
         </section>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="sos-situations-grid grid gap-4 sm:grid-cols-2">
           {SITUATIONS.map((s, i) => (
             <button
               key={s.id}
               type="button"
               onClick={() => choose(s)}
-              className="glass lift animate-fade-up flex min-h-28 items-start gap-4 p-6 text-left"
+              data-situation={s.id}
+              className="sos-situation-card glass lift animate-fade-up group flex min-h-32 items-start gap-4 p-5 text-left sm:p-6"
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <span
                 aria-hidden="true"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-xl"
+                className="sos-situation-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-xl"
               >
                 {s.emoji}
               </span>
-              <span>
-                <span className="block text-lg font-semibold">{s.label}</span>
-                <span className="mt-1 block text-sm leading-relaxed text-muted">
+              <span className="sos-situation-copy min-w-0 flex-1">
+                <span className="sos-situation-title block text-lg font-semibold">
+                  {s.label}
+                </span>
+                <span className="sos-situation-detail mt-1.5 block text-sm leading-relaxed text-muted">
                   {s.detail}
                 </span>
+              </span>
+              <span className="sos-situation-arrow" aria-hidden="true">
+                →
               </span>
             </button>
           ))}
@@ -116,18 +140,25 @@ export default function SosFlow() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight">
-          <span aria-hidden="true" className="mr-2">
-            {situation.emoji}
-          </span>
-          {situation.label}
-        </h1>
+    <div className="sos-flow sos-result mx-auto max-w-3xl space-y-6">
+      <div className="sos-result-header flex items-center justify-between gap-4">
+        <div>
+          <p className="eyebrow">Let&apos;s steady this moment</p>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="sos-result-title mt-1 text-2xl font-bold tracking-tight sm:text-3xl"
+          >
+            <span aria-hidden="true" className="sos-result-icon mr-2">
+              {situation.emoji}
+            </span>
+            {situation.label}
+          </h1>
+        </div>
         <button
           type="button"
           onClick={() => setSituation(null)}
-          className="lift shrink-0 rounded-full border border-card-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+          className="sos-back-button lift shrink-0 rounded-full border border-card-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
         >
           ← Choose again
         </button>
@@ -136,21 +167,37 @@ export default function SosFlow() {
       <section
         aria-label="Your grounding script"
         aria-busy={loading}
-        className="glass overflow-hidden p-6 ring-1 ring-primary/25 sm:p-8"
+        className="sos-grounding-card glass overflow-hidden p-6 sm:p-8"
       >
-        <p className="eyebrow mb-4" aria-live="polite">
-          {loading
-            ? "Personalizing your script…"
-            : personalized
-              ? plan.name
-                ? `Written for you, ${plan.name}`
-                : "Written for you just now"
-              : "Grounding steps"}
-        </p>
+        <div
+          className="sos-script-meta mb-5"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <p
+            className="eyebrow sos-script-label"
+            data-source={personalized ? "gemini" : "offline"}
+          >
+            <span className="sos-script-status" aria-hidden="true" />
+            {personalized
+              ? "Generated live with Gemini"
+              : "Offline safety steps"}
+          </p>
+          <span className="sos-script-note">
+            {loading
+              ? "Gemini is preparing a personal version…"
+              : personalized
+                ? plan.name
+                  ? `Personalized for ${plan.name}`
+                  : "Personalized for this moment"
+                : "Ready even if Gemini is unavailable"}
+          </span>
+        </div>
         {/* Re-keyed so the personalized script fades in over the fallback. */}
         <div
           key={personalized ? "personal" : "fallback"}
-          className={`animate-fade-up leading-relaxed transition-opacity duration-300 ${
+          className={`sos-script-body animate-fade-up leading-relaxed transition-opacity duration-300 ${
             loading ? "opacity-70" : "opacity-100"
           }`}
         >
@@ -158,32 +205,56 @@ export default function SosFlow() {
         </div>
       </section>
 
-      <section aria-label="Guided breathing" className="glass p-4">
+      <section
+        aria-label="Guided breathing"
+        className="sos-breathing-card glass p-4 sm:p-6"
+      >
+        <div className="sos-section-heading">
+          <div>
+            <p className="eyebrow">Stay with the rhythm</p>
+            <h2>Breathe through this wave</h2>
+          </div>
+          <span>About 2 minutes</span>
+        </div>
         <BreathingCircle />
       </section>
 
-      <section aria-label="Reach a person" className="grid gap-4 sm:grid-cols-2">
-        {ready && plan.supporterPhone ? (
+      <section
+        aria-label="Reach a person"
+        className="sos-contact-panel glass p-5 sm:p-6"
+      >
+        <div className="sos-contact-heading">
+          <span className="sos-contact-mark" aria-hidden="true">
+            ↗
+          </span>
+          <div>
+            <h2>You don&apos;t have to hold this alone.</h2>
+            <p>A real person can stay with you while the feeling passes.</p>
+          </div>
+        </div>
+        <div className="sos-contact-actions mt-5 grid gap-3 sm:grid-cols-2">
+          {ready && plan.supporterPhone ? (
+            <a
+              href={`tel:${plan.supporterPhone}`}
+              className="sos-contact-button sos-contact-primary lift rounded-full bg-primary px-6 py-4 text-center text-base font-bold text-white shadow-soft hover:bg-primary-strong"
+            >
+              Call {plan.supporter || "my person"}
+            </a>
+          ) : (
+            <Link
+              href="/plan"
+              className="sos-contact-button sos-contact-secondary lift rounded-full border-2 border-primary bg-surface px-6 py-4 text-center text-base font-semibold text-primary shadow-soft"
+            >
+              Add a trusted contact
+            </Link>
+          )}
           <a
-            href={`tel:${plan.supporterPhone}`}
-            className="lift rounded-full bg-primary px-6 py-4 text-center text-lg font-bold text-white shadow-soft hover:bg-primary-strong"
+            href="tel:14446"
+            className="sos-contact-button sos-contact-helpline lift rounded-full bg-danger px-6 py-4 text-center text-base font-bold text-white shadow-soft hover:opacity-90"
           >
-            Call {plan.supporter || "my person"}
+            Call de-addiction helpline
           </a>
-        ) : (
-          <Link
-            href="/plan"
-            className="lift rounded-full border-2 border-primary bg-surface px-6 py-4 text-center text-lg font-semibold text-primary shadow-soft"
-          >
-            Add a trusted contact
-          </Link>
-        )}
-        <a
-          href="tel:18005990019"
-          className="lift rounded-full bg-danger px-6 py-4 text-center text-lg font-bold text-white shadow-soft hover:opacity-90"
-        >
-          Call KIRAN helpline
-        </a>
+        </div>
       </section>
     </div>
   );
