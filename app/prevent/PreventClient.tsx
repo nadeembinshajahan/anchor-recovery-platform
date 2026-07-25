@@ -191,7 +191,8 @@ export default function PreventClient() {
             loading ? "opacity-70" : "opacity-100"
           }`}
         >
-          <AiText text={planText} />
+          {/* The fallback plan is English; only tag real generated output. */}
+          <AiText text={planText} lang={personalized ? plan.language : undefined} />
         </div>
       </section>
 

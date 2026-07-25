@@ -13,11 +13,13 @@ import {
   CAREGIVER_SITUATIONS,
   type CaregiverSituation,
 } from "@/lib/content";
+import { planToProfile, useSafetyPlan } from "@/lib/profile";
 import { useGenerate } from "@/lib/useGenerate";
 
 export default function CaregiverClient() {
   const [situation, setSituation] = useState<CaregiverSituation | null>(null);
   const { generate, text, loading, error, reset } = useGenerate();
+  const { plan } = useSafetyPlan();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   function choose(s: CaregiverSituation) {
@@ -26,6 +28,7 @@ export default function CaregiverClient() {
     void generate({
       task: "caregiver-script",
       context: `${s.label}. ${s.context}`,
+      profile: planToProfile(plan),
     });
   }
 
@@ -107,7 +110,7 @@ export default function CaregiverClient() {
             {text && !loading && (
               <div className="caregiver-script-answer">
                 <p className="eyebrow">Generated live with Gemini</p>
-                <AiText text={text} />
+                <AiText text={text} lang={plan.language} />
               </div>
             )}
             {error && !loading && (

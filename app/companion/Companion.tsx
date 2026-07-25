@@ -129,7 +129,11 @@ export default function Companion() {
         setReplySource("gemini");
         if ("speechSynthesis" in window) {
           window.speechSynthesis.cancel();
-          window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+          const utterance = new SpeechSynthesisUtterance(text);
+          // Full locale steers voice selection toward an Indian-accent /
+          // matching-language voice where the OS has one installed.
+          utterance.lang = `${plan.language}-IN`;
+          window.speechSynthesis.speak(utterance);
         }
       } else {
         setReply("I couldn't reach the assistant just now, but I'm still here. Try again in a moment.");
@@ -307,7 +311,11 @@ export default function Companion() {
                 </div>
               </div>
               <div className="companion-reply-body mt-4">
-                <AiText text={reply} />
+                {/* Fallback copy is English; only tag the language on real replies. */}
+                <AiText
+                  text={reply}
+                  lang={replySource === "gemini" ? plan.language : undefined}
+                />
               </div>
             </article>
           )}

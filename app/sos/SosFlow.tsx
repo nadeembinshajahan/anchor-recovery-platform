@@ -190,7 +190,8 @@ export default function SosFlow() {
             loading ? "opacity-70" : "opacity-100"
           }`}
         >
-          <AiText text={script} />
+          {/* The instant fallback script is English; only tag real replies. */}
+          <AiText text={script} lang={personalized ? plan.language : undefined} />
         </div>
       </section>
 

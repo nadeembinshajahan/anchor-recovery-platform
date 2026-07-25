@@ -20,6 +20,7 @@
 import { GoogleGenAI, Modality, type Session } from "@google/genai";
 import { GEMINI_LIVE_MODEL } from "./config";
 import { COMPANION_SYSTEM_PROMPT } from "./prompts";
+import { loadPlan, PLAN_LANGUAGES } from "./profile";
 
 export type LiveStatus =
   | "connecting"
@@ -293,6 +294,22 @@ export async function startLiveSession(
     void playbackCtx.close();
     throw err instanceof Error ? err : new Error("Voice connection failed.");
   }
+
+  // Pulari speaks first: a kickoff turn right after connect means the user
+  // hears a warm greeting instead of pressure-inducing silence. Personalized
+  // from the on-device plan (never sent anywhere except this session).
+  const plan = loadPlan();
+  const preferred = PLAN_LANGUAGES.find((l) => l.code === plan.language);
+  session.sendClientContent({
+    turns: `[Session start — the user just opened the voice page${
+      plan.name ? `; their name is ${plan.name}` : ""
+    }${
+      preferred && preferred.code !== "en"
+        ? `; they prefer to talk in ${preferred.label}`
+        : ""
+    }. Greet them warmly in one or two short sentences and gently ask how they are right now.]`,
+    turnComplete: true,
+  });
 
   // 5. Start streaming mic frames to the session. The analyser taps the mic
   // signal in parallel with the worklet — it never alters what is sent.

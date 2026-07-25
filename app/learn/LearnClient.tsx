@@ -10,10 +10,12 @@
  */
 import AiText from "@/components/AiText";
 import { LEARN_TOPICS, type LearnTopic } from "@/lib/content";
+import { planToProfile, useSafetyPlan } from "@/lib/profile";
 import { useGenerate } from "@/lib/useGenerate";
 
 function TopicItem({ topic, index }: { topic: LearnTopic; index: number }) {
   const { generate, text, loading, error } = useGenerate();
+  const { plan } = useSafetyPlan();
 
   return (
     <li
@@ -52,6 +54,7 @@ function TopicItem({ topic, index }: { topic: LearnTopic; index: number }) {
                   generate({
                     task: "explain-topic",
                     context: `${topic.title}. ${topic.summary}`,
+                    profile: planToProfile(plan),
                   })
                 }
                 className="sun-button sun-button-glass topic-explain lift"
@@ -71,7 +74,7 @@ function TopicItem({ topic, index }: { topic: LearnTopic; index: number }) {
             {text && (
               <div className="topic-ai-answer">
                 <p className="eyebrow mb-2">Generated live with Gemini</p>
-                <AiText text={text} />
+                <AiText text={text} lang={plan.language} />
               </div>
             )}
             {error && !loading && (

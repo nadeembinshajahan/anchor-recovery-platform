@@ -4,6 +4,7 @@ import { catalogueForPrompt } from "@/lib/sources";
 import {
   buildPrompt,
   parseGenerateRequest,
+  RESPONSE_LANGUAGES,
   TASK_TYPES,
   type GenerateRequest,
 } from "@/lib/prompts";
@@ -160,5 +161,51 @@ describe("citation rules", () => {
       expect(system).not.toContain(catalogueForPrompt());
       expect(system).not.toContain("[S1]");
     }
+  });
+});
+
+describe("response language", () => {
+  it("accepts a catalogue language code", () => {
+    const parsed = parseGenerateRequest({
+      task: "explain-topic",
+      context: "cravings",
+      profile: { language: "ml" },
+    });
+    expect(parsed?.profile?.language).toBe("ml");
+  });
+
+  it("silently drops unknown or non-string language values", () => {
+    for (const language of ["xx", "en-GB", 7, null]) {
+      const parsed = parseGenerateRequest({
+        task: "explain-topic",
+        context: "cravings",
+        profile: { language },
+      });
+      expect(parsed).not.toBeNull();
+      expect(parsed?.profile?.language).toBeUndefined();
+    }
+  });
+
+  it("instructs the model to respond in the requested language", () => {
+    for (const [code, names] of Object.entries(RESPONSE_LANGUAGES)) {
+      const { system } = buildPrompt({
+        task: "explain-topic",
+        context: "test",
+        profile: { language: code },
+      });
+      expect(system).toContain(`Respond entirely in ${names.native}`);
+      expect(system).toContain(names.english);
+    }
+  });
+
+  it("adds no language rule for English or absent language", () => {
+    const noProfile = buildPrompt({ task: "explain-topic", context: "test" });
+    const enProfile = buildPrompt({
+      task: "explain-topic",
+      context: "test",
+      profile: { name: "Asha" },
+    });
+    expect(noProfile.system).not.toContain("Respond entirely in");
+    expect(enProfile.system).not.toContain("Respond entirely in");
   });
 });

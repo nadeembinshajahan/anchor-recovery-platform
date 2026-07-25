@@ -34,7 +34,7 @@ export function parseBlocks(text: string): Block[] {
     });
 }
 
-function AiText({ text }: { text: string }) {
+function AiText({ text, lang }: { text: string; lang?: string }) {
   // Citations first (strips [S#] markers, resolves only catalogue ids —
   // an invented source can never render), then structural parsing.
   const { blocks, sources } = useMemo(() => {
@@ -42,8 +42,11 @@ function AiText({ text }: { text: string }) {
     return { blocks: parseBlocks(display), sources };
   }, [text]);
 
+  // `lang` lets screen readers switch pronunciation for non-English replies.
+  const wrapperLang = lang && lang !== "en" ? lang : undefined;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" lang={wrapperLang}>
       {blocks.map((block, i) => {
         if (block.kind === "list") {
           return (
@@ -62,7 +65,12 @@ function AiText({ text }: { text: string }) {
         return <p key={i}>{block.lines.join(" ")}</p>;
       })}
       {sources.length > 0 && (
-        <footer className="ai-sources border-t border-card-border pt-3">
+        <footer
+          className="ai-sources border-t border-card-border pt-3"
+          // Source labels are English; reset lang so screen readers don't
+          // read them with the reply language's pronunciation rules.
+          lang={wrapperLang ? "en" : undefined}
+        >
           <p className="eyebrow mb-1.5">Sources</p>
           <ul className="space-y-1 text-xs text-muted">
             {sources.map((s) => (

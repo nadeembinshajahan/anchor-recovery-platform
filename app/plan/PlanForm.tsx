@@ -7,7 +7,11 @@
  * would block the page.
  */
 import { useState } from "react";
-import { useSafetyPlan, type SafetyPlan } from "@/lib/profile";
+import {
+  PLAN_LANGUAGES,
+  useSafetyPlan,
+  type SafetyPlan,
+} from "@/lib/profile";
 
 const PRESET_TOOLS = [
   "Cold water on face",
@@ -258,6 +262,47 @@ export default function PlanForm() {
             Add
           </button>
         </div>
+      </fieldset>
+
+      <fieldset className="plan-section plan-language-section">
+        <legend className="plan-section-heading">
+          <span aria-hidden="true" className="plan-step">
+            03
+          </span>
+          <span className="plan-legend-copy">
+            <span className="eyebrow">Response language</span>
+            <strong>Pulari replies in</strong>
+          </span>
+        </legend>
+        <div
+          role="radiogroup"
+          aria-label="Language for AI replies"
+          className="plan-tools"
+        >
+          {PLAN_LANGUAGES.map((option) => {
+            const active = current.language === option.code;
+            return (
+              <button
+                key={option.code}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                lang={option.code}
+                onClick={() => set({ language: option.code })}
+                className={`plan-tool lift ${active ? "plan-tool-active" : ""}`}
+              >
+                <span aria-hidden="true" className="plan-tool-check">
+                  ✓
+                </span>
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="plan-field-note text-sm text-muted">
+          Crisis scripts, plans, and explanations arrive in this language. The
+          voice companion also understands you if you simply speak it.
+        </p>
       </fieldset>
 
       <div className="plan-actions">

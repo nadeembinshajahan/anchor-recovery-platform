@@ -9,6 +9,7 @@ describe("planToProfile", () => {
       supporter: "Ravi",
       supporterPhone: "+911234567890",
       copingTools: ["walking"],
+      language: "en",
       updatedAt: "2026-07-25T00:00:00.000Z",
     };
     const profile = planToProfile(plan);
@@ -27,5 +28,18 @@ describe("planToProfile", () => {
     expect(profile.substance).toBeUndefined();
     expect(profile.supporter).toBeUndefined();
     expect(profile.copingTools).toBeUndefined();
+  });
+
+  it("omits language when it is the English default", () => {
+    expect(planToProfile(EMPTY_PLAN).language).toBeUndefined();
+    expect(planToProfile({ ...EMPTY_PLAN, language: "en" }).language).toBeUndefined();
+  });
+
+  it("includes a non-default language", () => {
+    expect(planToProfile({ ...EMPTY_PLAN, language: "ml" }).language).toBe("ml");
+  });
+
+  it("defaults the stored plan language to English", () => {
+    expect(EMPTY_PLAN.language).toBe("en");
   });
 });

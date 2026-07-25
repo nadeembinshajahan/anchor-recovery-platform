@@ -9,22 +9,41 @@
  */
 import { useSyncExternalStore } from "react";
 
+/**
+ * Languages Pulari can reply in. Codes are BCP-47 primary subtags; labels
+ * are shown in their own script so a reader can recognize their language
+ * even when the rest of the UI is not in it.
+ */
+export const PLAN_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "ml", label: "മലയാളം" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ta", label: "தமிழ்" },
+] as const;
+
+export type PlanLanguage = (typeof PLAN_LANGUAGES)[number]["code"];
+
 export interface SafetyPlan {
   name: string;
   substance: string;
   supporter: string;
   supporterPhone: string;
   copingTools: string[];
+  /** Preferred language for AI replies. "en" is the default. */
+  language: PlanLanguage;
   updatedAt: string;
 }
 
-/** Frozen so the shared sentinel can never be mutated by a call site. */
+/** Frozen so the shared sentinel can never be mutated by a call site.
+ *  Plans stored before `language` existed inherit "en" via the spread in
+ *  loadPlan, so no migration is needed. */
 export const EMPTY_PLAN: SafetyPlan = Object.freeze({
   name: "",
   substance: "",
   supporter: "",
   supporterPhone: "",
   copingTools: [],
+  language: "en",
   updatedAt: "",
 });
 
@@ -98,12 +117,14 @@ export function useSafetyPlan(): {
   return { plan, ready, update: savePlan, clear: clearPlan };
 }
 
-/** Shape sent to the API — omits the phone number, which the model never needs. */
+/** Shape sent to the API — omits the phone number, which the model never
+ *  needs, and omits `language` when it is the "en" default. */
 export function planToProfile(plan: SafetyPlan) {
   return {
     name: plan.name || undefined,
     substance: plan.substance || undefined,
     supporter: plan.supporter || undefined,
     copingTools: plan.copingTools.length ? plan.copingTools : undefined,
+    language: plan.language && plan.language !== "en" ? plan.language : undefined,
   };
 }

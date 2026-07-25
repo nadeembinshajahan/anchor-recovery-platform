@@ -16,6 +16,21 @@ export const TASK_TYPES = [
 
 export type TaskType = (typeof TASK_TYPES)[number];
 
+/**
+ * Reply languages the API honors, mapped to the names used in the prompt.
+ * Must stay in sync with PLAN_LANGUAGES in lib/profile.ts (kept separate
+ * because this module is imported server-side and profile.ts is a client
+ * module).
+ */
+export const RESPONSE_LANGUAGES: Record<
+  string,
+  { native: string; english: string }
+> = {
+  ml: { native: "മലയാളം", english: "Malayalam" },
+  hi: { native: "हिन्दी", english: "Hindi" },
+  ta: { native: "தமிழ்", english: "Tamil" },
+};
+
 export interface GenerateRequest {
   task: TaskType;
   /** Situation/topic selected in the UI (from fixed choices, zero typing). */
@@ -26,6 +41,8 @@ export interface GenerateRequest {
     substance?: string;
     supporter?: string;
     copingTools?: string[];
+    /** Preferred reply language code (validated against RESPONSE_LANGUAGES). */
+    language?: string;
   };
 }
 
@@ -114,6 +131,12 @@ export function parseGenerateRequest(body: unknown): GenerateRequest | null {
       copingTools: Array.isArray(p.copingTools)
         ? p.copingTools.filter((t): t is string => typeof t === "string").map((t) => t.slice(0, 100)).slice(0, 10)
         : undefined,
+      // Only catalogue languages pass through; anything else is dropped
+      // silently — the client is never trusted to steer the prompt freely.
+      language:
+        typeof p.language === "string" && p.language in RESPONSE_LANGUAGES
+          ? p.language
+          : undefined,
     };
   }
   return { task: b.task as TaskType, context, profile };
@@ -140,10 +163,18 @@ export function buildPrompt(req: GenerateRequest): {
         .join("\n")
     : "";
 
+  const language = req.profile?.language
+    ? RESPONSE_LANGUAGES[req.profile.language]
+    : undefined;
+  const languageRule = language
+    ? `\n\nRespond entirely in ${language.native} (${language.english}). Keep
+helpline numbers and citation ids like [S2] exactly as they are.`
+    : "";
+
   return {
     system: `${BASE_GUARDRAILS}\n\n${TASK_INSTRUCTIONS[req.task]}${
       CITED_TASKS.has(req.task) ? citationRules() : ""
-    }`,
+    }${languageRule}`,
     user: `${profileLines ? profileLines + "\n\n" : ""}Situation: ${req.context}`,
   };
 }
