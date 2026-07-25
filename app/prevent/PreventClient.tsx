@@ -19,7 +19,7 @@ import { FALLBACK_PLAN } from "./occasions";
 
 export default function PreventClient() {
   const { plan } = useSafetyPlan();
-  const { generate, loading, error } = useGenerate();
+  const { generate, loading, error, sig } = useGenerate();
   const [occasion, setOccasion] = useState<string | null>(null);
   const [planText, setPlanText] = useState<string>(FALLBACK_PLAN);
   const [personalized, setPersonalized] = useState(false);
@@ -104,8 +104,22 @@ export default function PreventClient() {
             loading ? "opacity-70" : "opacity-100"
           }`}
         >
-          {/* The fallback plan is English; only tag real generated output. */}
-          <AiText text={planText} lang={personalized ? plan.language : undefined} />
+          {/* The fallback plan is English; only tag real generated output.
+              Read-aloud is signature-gated, so the unsigned fallback never
+              autoplays — by design. */}
+          <AiText
+            text={planText}
+            lang={personalized ? plan.language : undefined}
+            speak={
+              personalized
+                ? {
+                    sig,
+                    lang: plan.language !== "en" ? plan.language : undefined,
+                    autoplay: true,
+                  }
+                : undefined
+            }
+          />
         </div>
       </section>
 

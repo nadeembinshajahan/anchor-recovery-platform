@@ -47,6 +47,37 @@ describe("useGenerate", () => {
     expect(result.current.loading).toBe(false);
   });
 
+  it("captures the response signature and clears it on reset", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ text: "signed answer", sig: "a".repeat(64) })),
+    );
+    const { result } = renderHook(() => useGenerate());
+
+    await act(async () => {
+      await result.current.generate({ task: "explain-topic", context: "triggers" });
+    });
+    expect(result.current.sig).toBe("a".repeat(64));
+
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.sig).toBeNull();
+  });
+
+  it("leaves sig null when the server omits it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ text: "unsigned answer" })),
+    );
+    const { result } = renderHook(() => useGenerate());
+    await act(async () => {
+      await result.current.generate({ task: "explain-topic", context: "halt" });
+    });
+    expect(result.current.text).toBe("unsigned answer");
+    expect(result.current.sig).toBeNull();
+  });
+
   it("sets the server error message and returns null on HTTP failure", async () => {
     vi.stubGlobal(
       "fetch",

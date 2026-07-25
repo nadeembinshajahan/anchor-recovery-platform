@@ -19,7 +19,7 @@ import { FALLBACK_SCRIPT, type Situation } from "./situations";
 
 export default function SosFlow() {
   const { plan, ready } = useSafetyPlan();
-  const { generate, loading } = useGenerate();
+  const { generate, loading, sig } = useGenerate();
   const [situation, setSituation] = useState<Situation | null>(null);
   const [script, setScript] = useState<string>(FALLBACK_SCRIPT);
   const [personalized, setPersonalized] = useState(false);
@@ -115,8 +115,22 @@ export default function SosFlow() {
             loading ? "opacity-70" : "opacity-100"
           }`}
         >
-          {/* The instant fallback script is English; only tag real replies. */}
-          <AiText text={script} lang={personalized ? plan.language : undefined} />
+          {/* The instant fallback script is English; only tag real replies.
+              Read-aloud only for the signed AI script — the fallback has no
+              signature by design, so it stays silent (and always readable). */}
+          <AiText
+            text={script}
+            lang={personalized ? plan.language : undefined}
+            speak={
+              personalized
+                ? {
+                    sig,
+                    lang: plan.language !== "en" ? plan.language : undefined,
+                    autoplay: true,
+                  }
+                : undefined
+            }
+          />
         </div>
       </section>
 

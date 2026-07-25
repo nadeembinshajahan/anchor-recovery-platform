@@ -18,7 +18,7 @@ import { useGenerate } from "@/lib/useGenerate";
 
 export default function CaregiverClient() {
   const [situation, setSituation] = useState<CaregiverSituation | null>(null);
-  const { generate, text, loading, error, reset } = useGenerate();
+  const { generate, text, sig, loading, error, reset } = useGenerate();
   const { plan } = useSafetyPlan();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -110,7 +110,17 @@ export default function CaregiverClient() {
             {text && !loading && (
               <div className="caregiver-script-answer">
                 <p className="eyebrow">Generated live with Gemini</p>
-                <AiText text={text} lang={plan.language} />
+                {/* Signed AI script → read-aloud with autoplay; the curated
+                    fallback tips below have no signature and stay silent. */}
+                <AiText
+                  text={text}
+                  lang={plan.language}
+                  speak={{
+                    sig,
+                    lang: plan.language !== "en" ? plan.language : undefined,
+                    autoplay: true,
+                  }}
+                />
               </div>
             )}
             {error && !loading && (

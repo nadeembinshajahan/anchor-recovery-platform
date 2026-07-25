@@ -50,7 +50,9 @@ describe("POST /api/generate", () => {
     const res = await POST(makeReq({ body: validBody(`happy-${Math.random()}`) }));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toEqual({ text: "generated response" });
+    expect(json.text).toBe("generated response");
+    // Every successful response is signed for the read-aloud endpoint.
+    expect(json.sig).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("rejects malformed JSON with 400", async () => {

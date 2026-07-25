@@ -32,6 +32,26 @@ describe("AiText", () => {
     const { container } = render(<AiText text="" />);
     expect(container.firstChild).toBeInTheDocument();
   });
+
+  it("renders the read-aloud control for signed AI text", () => {
+    render(
+      <AiText
+        text="A signed answer."
+        speak={{ sig: "b".repeat(64), autoplay: false }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /listen/i })).toBeInTheDocument();
+  });
+
+  it("renders no read-aloud control without a signature (fallback text)", () => {
+    render(<AiText text="Unsigned fallback script." speak={{ sig: null }} />);
+    expect(screen.queryByRole("button", { name: /listen/i })).not.toBeInTheDocument();
+  });
+
+  it("renders no read-aloud control when speak is omitted", () => {
+    render(<AiText text="Plain text." />);
+    expect(screen.queryByRole("button", { name: /listen/i })).not.toBeInTheDocument();
+  });
 });
 
 describe("parseBlocks", () => {

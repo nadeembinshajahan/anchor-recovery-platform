@@ -14,7 +14,7 @@ import { planToProfile, useSafetyPlan } from "@/lib/profile";
 import { useGenerate } from "@/lib/useGenerate";
 
 function TopicItem({ topic, index }: { topic: LearnTopic; index: number }) {
-  const { generate, text, loading, error } = useGenerate();
+  const { generate, text, sig, loading, error } = useGenerate();
   const { plan } = useSafetyPlan();
 
   return (
@@ -74,7 +74,16 @@ function TopicItem({ topic, index }: { topic: LearnTopic; index: number }) {
             {text && (
               <div className="topic-ai-answer">
                 <p className="eyebrow mb-2">Generated live with Gemini</p>
-                <AiText text={text} lang={plan.language} />
+                {/* Signed AI answer → read-aloud with autoplay. */}
+                <AiText
+                  text={text}
+                  lang={plan.language}
+                  speak={{
+                    sig,
+                    lang: plan.language !== "en" ? plan.language : undefined,
+                    autoplay: true,
+                  }}
+                />
               </div>
             )}
             {error && !loading && (

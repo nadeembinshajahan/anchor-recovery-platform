@@ -56,6 +56,36 @@ export async function generateText(req: GenerateRequest): Promise<string> {
 }
 
 /**
+ * Synthesize speech for AI-generated text (the read-aloud feature).
+ * Returns raw 24 kHz mono 16-bit PCM; the caller wraps it for transport.
+ * Voice matches the app's narration voice for a consistent identity.
+ */
+/** Speech takes longer than text: a full script is ~60s of audio and
+ *  synthesis time scales with it (a 30s cap aborted real answers). */
+const SPEECH_TIMEOUT_MS = 75_000;
+
+export async function generateSpeech(text: string): Promise<Uint8Array> {
+  const response = await client().models.generateContent({
+    model: "gemini-2.5-flash-preview-tts",
+    contents: [{ parts: [{ text }] }],
+    config: {
+      responseModalities: ["AUDIO"],
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Sulafat" } },
+      },
+      abortSignal: AbortSignal.timeout(SPEECH_TIMEOUT_MS),
+    },
+  });
+  const b64 = response.candidates?.[0]?.content?.parts?.find(
+    (p) => p.inlineData,
+  )?.inlineData?.data;
+  if (!b64) {
+    throw new Error("TTS model returned no audio");
+  }
+  return Buffer.from(b64, "base64");
+}
+
+/**
  * Mint a single-use ephemeral token the browser can use to open a Gemini
  * Live session directly, without ever seeing the real API key.
  *

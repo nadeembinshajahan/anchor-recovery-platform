@@ -3,6 +3,7 @@ import { stableCacheKey, TtlLruCache } from "@/lib/cache";
 import { generateText } from "@/lib/gemini";
 import { parseGenerateRequest, type TaskType } from "@/lib/prompts";
 import { clientKey, isRateLimited } from "@/lib/rateLimit";
+import { signText } from "@/lib/sign";
 
 /**
  * Response cache for deterministic-enough tasks: two users tapping
@@ -78,7 +79,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (key) {
     const cached = responseCache.get(key);
     if (cached !== undefined) {
-      return NextResponse.json({ text: cached, cached: true });
+      // Signed at response time so cached entries need no re-keying and a
+      // signing-secret rotation invalidates nothing in the text cache.
+      return NextResponse.json({ text: cached, sig: signText(cached), cached: true });
     }
   }
 
@@ -87,7 +90,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       ? await generateCoalesced(key, () => generateText(parsed))
       : await generateText(parsed);
     if (key) responseCache.set(key, text);
-    return NextResponse.json({ text });
+    // The signature lets /api/tts trust this text for read-aloud.
+    return NextResponse.json({ text, sig: signText(text) });
   } catch (err) {
     // Never leak internals to the client; log server-side only.
     console.error("generate failed:", err instanceof Error ? err.message : err);

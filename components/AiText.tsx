@@ -12,6 +12,7 @@
  * (loading flags, voice status).
  */
 import { memo, useMemo } from "react";
+import ReadAloud from "@/components/ReadAloud";
 import { extractCitations } from "@/lib/sources";
 
 interface Block {
@@ -34,7 +35,23 @@ export function parseBlocks(text: string): Block[] {
     });
 }
 
-function AiText({ text, lang }: { text: string; lang?: string }) {
+export interface SpeakProps {
+  /** Signature from /api/generate; read-aloud only renders when present. */
+  sig: string | null;
+  lang?: string;
+  autoplay?: boolean;
+}
+
+function AiText({
+  text,
+  lang,
+  speak,
+}: {
+  text: string;
+  lang?: string;
+  /** Enable the read-aloud control for this (signed, AI-generated) text. */
+  speak?: SpeakProps;
+}) {
   // Citations first (strips [S#] markers, resolves only catalogue ids —
   // an invented source can never render), then structural parsing.
   const { blocks, sources } = useMemo(() => {
@@ -64,6 +81,14 @@ function AiText({ text, lang }: { text: string; lang?: string }) {
         }
         return <p key={i}>{block.lines.join(" ")}</p>;
       })}
+      {speak?.sig && (
+        <ReadAloud
+          text={text}
+          sig={speak.sig}
+          lang={speak.lang}
+          autoplay={speak.autoplay}
+        />
+      )}
       {sources.length > 0 && (
         <footer
           className="ai-sources border-t border-card-border pt-3"

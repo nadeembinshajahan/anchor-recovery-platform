@@ -31,6 +31,11 @@ export interface UseGenerateResult {
   generate: (args: GenerateArgs) => Promise<string | null>;
   /** Last successful generation, or null before/after reset. */
   text: string | null;
+  /**
+   * Server signature over `text`, proving it came from /api/generate.
+   * Required by /api/tts (read-aloud); null until a success lands.
+   */
+  sig: string | null;
   loading: boolean;
   /** Friendly, user-displayable message; null while healthy. */
   error: string | null;
@@ -43,6 +48,7 @@ const FRIENDLY_ERROR =
 
 export function useGenerate(): UseGenerateResult {
   const [text, setText] = useState<string | null>(null);
+  const [sig, setSig] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Monotonic id of the most recent generate() call. */
@@ -58,6 +64,8 @@ export function useGenerate(): UseGenerateResult {
     controller.current = new AbortController();
     setLoading(true);
     setError(null);
+    // Never let a previous answer's signature pair with new/fallback text.
+    setSig(null);
 
     try {
       const res = await fetch("/api/generate", {
@@ -68,6 +76,7 @@ export function useGenerate(): UseGenerateResult {
       });
       const data = (await res.json().catch(() => ({}))) as {
         text?: string;
+        sig?: string;
         error?: string;
       };
 
@@ -79,6 +88,7 @@ export function useGenerate(): UseGenerateResult {
         return null;
       }
       setText(data.text);
+      setSig(data.sig ?? null);
       return data.text;
     } catch {
       if (id === requestId.current) setError(FRIENDLY_ERROR);
@@ -93,9 +103,10 @@ export function useGenerate(): UseGenerateResult {
     controller.current?.abort();
     controller.current = null;
     setText(null);
+    setSig(null);
     setError(null);
     setLoading(false);
   }, []);
 
-  return { generate, text, loading, error, reset };
+  return { generate, text, sig, loading, error, reset };
 }
