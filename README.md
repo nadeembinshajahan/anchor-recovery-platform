@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚓ Anchor — Recovery & Prevention Platform
 
-## Getting Started
+A multi-modal, GenAI-powered recovery and prevention platform for people navigating
+substance use disorders **and** the caregivers supporting them. Built for the
+PromptWars challenge (Google for Developers × Hack2Skill).
 
-First, run the development server:
+**Live demo:** _deployed link here_ · **Stack:** Next.js 16 · TypeScript · Tailwind CSS 4 · Gemini API (`@google/genai`) · Google Maps
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Chosen vertical
+
+**Recovery and Prevention Platform** — supporting individuals with substance use
+disorders and their families with generative AI as the core engine, designed
+specifically for moments when **cognitive load is highest**.
+
+## The design principle behind everything: zero typing under stress
+
+A person mid-craving or mid-panic cannot fill in forms. Every crisis-path
+interaction in Anchor is a **single tap or a spoken word**:
+
+| Requirement (from the problem statement) | Where it lives | How |
+| --- | --- | --- |
+| Zero-typing interventions | `/sos` | Six big situation buttons → instant step-by-step grounding script + guided breathing. No keyboard, ever. |
+| Personalized emergency scripts | `/sos` + `/plan` | The on-device safety plan (name, substance, trusted contact, coping tools that have worked before) is attached to the AI request, so Gemini writes the script *for this person*, addressing them by name and using their own coping tools. |
+| Generative AI as core engine | `app/api/generate` + `lib/gemini.ts` + `lib/prompts.ts` | Every feature (scripts, caregiver coaching, education, companion) is a task type routed through one audited Gemini surface with shared safety guardrails. |
+| Multi-modal | `/companion` | Real-time **voice** conversation via Gemini Live (ephemeral-token architecture), with text + speech-synthesis fallback; visual breathing guidance; maps. |
+| Educational resources | `/learn` | Curated, clinically-sane static content (works offline) + "Explain this simply" powered by Gemini per topic. |
+| Contextual safety tools | `/nearby` | Geolocated Google Maps search for de-addiction centres, hospitals, pharmacies, counselling & AA/NA meetings + one-tap 24×7 helplines (KIRAN, Tele-MANAS, Vandrevala). |
+| Empowering families/caregivers | `/caregiver` | "Say this, not that" scripts for hard moments (relapse, denial, boundaries, burnout) generated on demand. |
+
+## Approach and logic
+
+1. **One audited AI surface.** All prompts are built in `lib/prompts.ts` and all model
+   calls go through `lib/gemini.ts` (server-only). Guardrails — never diagnose, never
+   give medication advice, escalate emergencies to 112/helplines first — are enforced
+   in the system prompt of *every* task type. Nothing reaches the model that is not
+   constructed in that module.
+2. **Personalization without accounts.** The safety plan lives in `localStorage`
+   only. No sign-up, no server-side storage of health data. Only the fields the model
+   needs are attached per-request (the supporter's phone number, for instance, never
+   leaves the device — see `planToProfile`).
+3. **Resilience by layering.** Every AI feature has a non-AI floor: the SOS flow
+   shows a safe generic grounding script instantly while the personalized one loads
+   (and keeps it if the network fails); the voice companion falls back to tap-to-talk
+   chips + speech synthesis if a Live session can't be established; `/learn` content
+   is fully readable offline; helplines are static `tel:` links. A broken flow never
+   leaves a user in crisis with a spinner.
+4. **Security is architectural, not decorative.** The Gemini key exists only
+   server-side. The browser gets a **single-use, short-lived ephemeral token** for
+   Live voice sessions (`app/api/live-token`). Requests are schema-validated and
+   length-capped (`parseGenerateRequest`), rate-limited per client
+   (`lib/rateLimit.ts`), and model output is rendered as plain text — never as HTML —
+   eliminating injection-based XSS (`components/AiText.tsx`).
+
+## How it works
+
+```
+Browser (React client components)
+│
+├── /sos, /learn, /caregiver ──► POST /api/generate ──► lib/prompts (validate+build)
+│        one tap, no typing         rate-limited          └► lib/gemini ──► Gemini 2.5 Flash
+│
+├── /companion (voice) ──► POST /api/live-token ──► ephemeral token (single-use, 2 min window)
+│        └── browser connects DIRECTLY to Gemini Live with the token:
+│            mic 16 kHz PCM ──► Live session ──► 24 kHz audio replies (full duplex)
+│
+├── /nearby ──► Google Maps embed (geolocated category search) + tel: helplines
+└── /plan ──► localStorage only (feeds personalization; clearable anytime)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Run locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+cp .env.example .env.local   # add your GEMINI_API_KEY
+npm run dev                  # http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Quality gates
 
-## Learn More
+```bash
+npm run lint       # ESLint
+npm run typecheck  # TypeScript strict
+npm test           # Vitest unit tests (validation, rate limiting, rendering)
+npm run build      # production build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Accessibility
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Designed for "diverse users and environments" as a first-class constraint, because
+the target user may be shaking, crying, or cognitively flooded:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Large touch targets and short sentences on every crisis path
+- Semantic HTML, labeled controls, skip-link, keyboard operability, visible focus rings
+- `aria-live` announcements for async AI content; `aria-busy` while loading
+- `prefers-reduced-motion` respected (breathing animation degrades gracefully)
+- Light/dark themes with WCAG-conscious contrast; screen-reader fallback link for the map embed
 
-## Deploy on Vercel
+## Assumptions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **India-first locale** (event context): emergency number 112, KIRAN / Tele-MANAS /
+  Vandrevala helplines. Constants live in `lib/config.ts` for easy localization.
+- Anchor is a **support tool, not a medical device**; it consistently routes
+  emergencies to human help first and never gives clinical or medication advice.
+- Single-instance in-memory rate limiting is acceptable for a demo deployment;
+  a shared store (Redis) would replace it in production.
+- The evaluator may not grant mic permissions, so every voice feature has an
+  equivalent tap-only path.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT — see [LICENSE](LICENSE).

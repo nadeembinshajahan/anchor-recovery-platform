@@ -1,65 +1,84 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+interface PathCard {
+  href: string;
+  title: string;
+  body: string;
+  emphasis?: boolean;
+}
+
+const PATHS: readonly PathCard[] = [
+  {
+    href: "/sos",
+    title: "I need support right now",
+    body: "Zero-typing crisis flows: tap how you feel and get a personal, step-by-step script instantly.",
+    emphasis: true,
+  },
+  {
+    href: "/companion",
+    title: "Talk it out",
+    body: "A hands-free voice companion that listens and responds in real time — no typing needed.",
+  },
+  {
+    href: "/caregiver",
+    title: "I'm supporting someone",
+    body: "Say-this-not-that scripts, warning signs, and practical steps for family and caregivers.",
+  },
+  {
+    href: "/learn",
+    title: "Understand recovery",
+    body: "Plain-language education on cravings, triggers, relapse, and how to help — explained by AI on demand.",
+  },
+  {
+    href: "/nearby",
+    title: "Find help nearby",
+    body: "Locate de-addiction centres, hospitals, and pharmacies around you, plus 24x7 helplines.",
+  },
+  {
+    href: "/plan",
+    title: "My safety plan",
+    body: "Store your coping tools and trusted contact on this device to personalize every intervention.",
+  },
+];
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="space-y-10">
+      <section className="space-y-4 text-center">
+        <h1 className="text-4xl font-bold tracking-tight">
+          Steady support, <span className="text-primary">exactly when thinking is hardest.</span>
+        </h1>
+        <p className="mx-auto max-w-2xl text-lg text-muted">
+          Anchor supports people navigating substance use recovery — and the people who love
+          them — with AI-personalized interventions designed for moments of high stress:
+          big buttons, short steps, voice-first, no typing required.
+        </p>
+      </section>
+
+      <section aria-label="Choose your path" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {PATHS.map((p) => (
+          <Link
+            key={p.href}
+            href={p.href}
+            className={`block rounded-2xl border p-6 transition hover:-translate-y-0.5 hover:shadow-md ${
+              p.emphasis
+                ? "border-danger/40 bg-danger-soft"
+                : "border-surface-2 bg-surface"
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <h2 className="mb-2 text-xl font-semibold">{p.title}</h2>
+            <p className="text-sm text-muted">{p.body}</p>
+          </Link>
+        ))}
+      </section>
+
+      <section className="rounded-2xl bg-surface-2 p-6 text-sm text-muted">
+        <h2 className="mb-2 font-semibold text-foreground">Private by design</h2>
+        <p>
+          Your safety plan never leaves this device. Anchor is a support tool, not a medical
+          service — in an emergency, always call 112 or a helpline below.
+        </p>
+      </section>
     </div>
   );
 }
