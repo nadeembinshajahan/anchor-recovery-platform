@@ -3,7 +3,8 @@
 /**
  * "Talk it out" — a hands-free voice companion.
  *
- * Primary mode: full-duplex Gemini Live audio (see lib/liveClient.ts).
+ * Primary mode: full-duplex Gemini Live audio (see lib/liveClient.ts) with
+ * an audio-reactive orb driven by real microphone/model amplitude.
  * Fallback mode: if the browser can't run the audio pipeline or the Live
  * connection fails, the page degrades to zero-typing quick phrases that go
  * through /api/generate, with replies read aloud via speech synthesis.
@@ -11,6 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import AiText from "@/components/AiText";
+import VoiceOrb, { type OrbState } from "@/components/VoiceOrb";
 import {
   startLiveSession,
   supportsLiveVoice,
@@ -34,6 +36,15 @@ const STATUS_TEXT: Record<LiveStatus, string> = {
   "model-speaking": "Anchor is speaking…",
   closed: "Session ended.",
   error: "Something went wrong.",
+};
+
+const ORB_STATE: Record<LiveStatus | "idle", OrbState> = {
+  idle: "idle",
+  connecting: "connecting",
+  live: "listening",
+  "model-speaking": "speaking",
+  closed: "idle",
+  error: "idle",
 };
 
 type Mode = "voice" | "chips";
@@ -93,6 +104,12 @@ export default function Companion() {
     }
   }, []);
 
+  /** Stable callback so VoiceOrb's rAF loop survives re-renders untouched. */
+  const getLevels = useCallback(
+    () => sessionRef.current?.getLevels() ?? { input: 0, output: 0 },
+    [],
+  );
+
   const sendPhrase = useCallback(
     async (phrase: string) => {
       setBusyPhrase(phrase);
@@ -126,56 +143,64 @@ export default function Companion() {
   const voiceActive = status !== "idle" && status !== "closed" && status !== "error";
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold">Talk it out</h1>
-        <p className="text-muted">
-          A judgment-free companion, out loud. No typing, no transcripts kept.
-        </p>
-      </div>
-
-      {effectiveNotice && (
-        <p role="status" className="rounded-xl bg-surface-2 px-4 py-3 text-center text-sm">
-          {effectiveNotice}
-        </p>
-      )}
-
+    <div className="mx-auto max-w-3xl space-y-6">
       {effectiveMode === "voice" ? (
-        <section aria-label="Voice conversation" className="space-y-6 text-center">
-          <button
-            type="button"
-            aria-pressed={voiceActive}
-            onClick={voiceActive ? stopVoice : startVoice}
-            disabled={status === "connecting"}
-            className={`mx-auto flex h-40 w-40 flex-col items-center justify-center gap-2 rounded-full text-lg font-bold text-white shadow-lg transition active:scale-95 disabled:opacity-60 ${
-              voiceActive ? "bg-danger" : "bg-primary hover:bg-primary-strong"
-            }`}
-          >
-            <span aria-hidden="true" className="text-3xl">
-              {voiceActive ? "◼" : "🎙"}
-            </span>
-            {status === "connecting" ? "Connecting" : voiceActive ? "End" : "Start talking"}
-          </button>
+        <section aria-label="Voice conversation" className="glass px-6 py-10 text-center sm:px-10">
+          <p className="eyebrow">Voice companion</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">Talk it out</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+            A judgment-free companion, out loud. No typing, no transcripts kept.
+          </p>
+
+          <div className="my-10">
+            <VoiceOrb state={ORB_STATE[status]} getLevels={getLevels} />
+          </div>
 
           <p aria-live="polite" className="min-h-6 font-medium text-muted">
             {status === "idle" ? "Tap the button and speak naturally." : STATUS_TEXT[status]}
           </p>
 
-          {status === "model-speaking" && (
-            <div aria-hidden="true" className="flex justify-center gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span
-                  key={i}
-                  className="h-6 w-1.5 animate-pulse rounded-full bg-primary"
-                  style={{ animationDelay: `${i * 120}ms` }}
-                />
-              ))}
-            </div>
+          <button
+            type="button"
+            aria-pressed={voiceActive}
+            onClick={voiceActive ? stopVoice : startVoice}
+            disabled={status === "connecting"}
+            className={`lift mt-6 inline-flex min-w-52 items-center justify-center gap-2.5 rounded-full px-8 py-4 text-base font-bold text-white shadow-lg disabled:opacity-60 ${
+              voiceActive ? "bg-danger" : "bg-primary hover:bg-primary-strong"
+            }`}
+          >
+            <span aria-hidden="true" className="text-xl leading-none">
+              {status === "connecting" ? "…" : voiceActive ? "◼" : "🎙"}
+            </span>
+            {status === "connecting"
+              ? "Connecting"
+              : voiceActive
+                ? "End conversation"
+                : "Start talking"}
+          </button>
+
+          {effectiveNotice && (
+            <p role="status" className="mt-6 rounded-2xl bg-surface-2 px-4 py-3 text-sm">
+              {effectiveNotice}
+            </p>
           )}
         </section>
       ) : (
         <section aria-label="Tap to talk" className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="glass p-8 text-center">
+            <p className="eyebrow">Voice companion</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">Talk it out</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+              Tap a phrase — Anchor replies out loud. No typing needed.
+            </p>
+            {effectiveNotice && (
+              <p role="status" className="mt-5 rounded-2xl bg-surface-2 px-4 py-3 text-sm">
+                {effectiveNotice}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             {QUICK_PHRASES.map((phrase) => (
               <button
                 key={phrase}
@@ -183,7 +208,7 @@ export default function Companion() {
                 onClick={() => sendPhrase(phrase)}
                 disabled={busyPhrase !== null}
                 aria-busy={busyPhrase === phrase}
-                className="min-h-16 rounded-2xl border border-surface-2 bg-surface px-5 py-4 text-left font-medium transition hover:border-primary hover:shadow-md disabled:opacity-60"
+                className="glass lift min-h-16 px-5 py-4 text-left font-medium disabled:opacity-60"
               >
                 {busyPhrase === phrase ? "Thinking…" : `“${phrase}”`}
               </button>
@@ -191,13 +216,8 @@ export default function Companion() {
           </div>
 
           {reply && (
-            <div
-              aria-live="polite"
-              className="rounded-2xl border border-primary/30 bg-surface p-6 shadow-sm"
-            >
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-                Anchor
-              </p>
+            <div aria-live="polite" className="glass animate-fade-up p-6">
+              <p className="eyebrow mb-3">Anchor</p>
               <AiText text={reply} />
             </div>
           )}

@@ -74,10 +74,10 @@ export default function NearbyClient() {
               type="button"
               onClick={() => setCategory(c)}
               aria-pressed={active}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+              className={`lift rounded-full px-4.5 py-2.5 text-sm font-semibold ${
                 active
-                  ? "border-primary bg-primary text-white"
-                  : "border-surface-2 bg-surface hover:border-primary hover:text-primary"
+                  ? "bg-primary-soft text-primary-strong shadow-sm ring-1 ring-primary/30"
+                  : "glass text-muted hover:text-foreground"
               }`}
             >
               {c.label}
@@ -86,26 +86,46 @@ export default function NearbyClient() {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={requestLocation}
-          disabled={location.status === "locating"}
-          className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary-soft disabled:opacity-60"
-        >
-          {location.status === "locating" ? "Locating…" : "Use my location"}
-        </button>
-        <p aria-live="polite" className="text-sm text-muted">
-          {location.status === "granted" &&
-            "Using your location for more precise results."}
-          {location.status === "denied" &&
-            "Location unavailable — showing general results; the search still works."}
-          {(location.status === "idle" || location.status === "locating") &&
-            "Optional: share your location for more precise results."}
-        </p>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-surface-2 bg-surface">
+      <div className="glass overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3 border-b border-card-border px-5 py-3.5">
+          <button
+            type="button"
+            onClick={requestLocation}
+            disabled={location.status === "locating"}
+            className="lift inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+            </svg>
+            {location.status === "locating" ? "Locating…" : "Use my location"}
+          </button>
+          <p aria-live="polite" className="min-w-0 flex-1 text-sm text-muted">
+            {location.status === "granted" &&
+              "Using your location for more precise results."}
+            {location.status === "denied" &&
+              "Location unavailable — showing general results; the search still works."}
+            {(location.status === "idle" || location.status === "locating") &&
+              "Optional: share your location for more precise results."}
+          </p>
+          <a
+            href={externalHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-sm font-semibold text-primary hover:underline"
+          >
+            Open in Google Maps ↗
+          </a>
+        </div>
         <iframe
           key={embedSrc}
           src={embedSrc}
@@ -113,21 +133,12 @@ export default function NearbyClient() {
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
           allowFullScreen
-          className="h-[420px] w-full border-0"
+          className="h-[440px] w-full border-0"
         />
       </div>
-      <p className="text-sm">
-        <a
-          href={externalHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-primary underline"
-        >
-          Open in Google Maps
-        </a>{" "}
-        <span className="text-muted">
-          (opens in a new tab — use this if the map above does not load)
-        </span>
+      <p className="px-2 text-sm text-muted">
+        If the map does not load, use the &ldquo;Open in Google Maps&rdquo; link above —
+        it runs the same search in a new tab.
       </p>
     </section>
   );

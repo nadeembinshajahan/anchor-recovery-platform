@@ -22,6 +22,9 @@ const PRESET_TOOLS = [
 
 const PHONE_PATTERN = /^\+?[\d\s-]{7,17}$/;
 
+const FIELD_CLASSES =
+  "w-full rounded-xl border border-card-border bg-surface-2 px-3.5 py-2.5 text-foreground placeholder:text-muted/70 transition focus:border-primary";
+
 function isValidPhone(value: string): boolean {
   if (!value) return true; // optional field
   const digits = value.replace(/\D/g, "");
@@ -40,7 +43,7 @@ export default function PlanForm() {
   // mismatch between server (empty plan) and client (stored plan).
   if (!ready) {
     return (
-      <p role="status" className="text-muted">
+      <p role="status" className="glass p-6 text-muted">
         Loading your plan…
       </p>
     );
@@ -95,10 +98,10 @@ export default function PlanForm() {
   );
 
   return (
-    <form onSubmit={handleSave} noValidate className="space-y-8">
+    <form onSubmit={handleSave} noValidate className="glass space-y-8 p-8">
       <div className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label htmlFor="plan-name" className="block font-medium">
+        <div className="space-y-1.5">
+          <label htmlFor="plan-name" className="block text-sm font-semibold">
             Your name
           </label>
           <input
@@ -108,11 +111,11 @@ export default function PlanForm() {
             onChange={(e) => set({ name: e.target.value })}
             maxLength={100}
             autoComplete="given-name"
-            className="w-full rounded-lg border border-surface-2 bg-surface px-3 py-2"
+            className={FIELD_CLASSES}
           />
         </div>
-        <div className="space-y-1">
-          <label htmlFor="plan-substance" className="block font-medium">
+        <div className="space-y-1.5">
+          <label htmlFor="plan-substance" className="block text-sm font-semibold">
             What you&apos;re moving away from
           </label>
           <input
@@ -122,11 +125,11 @@ export default function PlanForm() {
             onChange={(e) => set({ substance: e.target.value })}
             maxLength={100}
             placeholder="e.g. alcohol"
-            className="w-full rounded-lg border border-surface-2 bg-surface px-3 py-2"
+            className={FIELD_CLASSES}
           />
         </div>
-        <div className="space-y-1">
-          <label htmlFor="plan-supporter" className="block font-medium">
+        <div className="space-y-1.5">
+          <label htmlFor="plan-supporter" className="block text-sm font-semibold">
             Trusted person&apos;s name
           </label>
           <input
@@ -136,11 +139,11 @@ export default function PlanForm() {
             onChange={(e) => set({ supporter: e.target.value })}
             maxLength={100}
             placeholder="e.g. my brother Arun"
-            className="w-full rounded-lg border border-surface-2 bg-surface px-3 py-2"
+            className={FIELD_CLASSES}
           />
         </div>
-        <div className="space-y-1">
-          <label htmlFor="plan-phone" className="block font-medium">
+        <div className="space-y-1.5">
+          <label htmlFor="plan-phone" className="block text-sm font-semibold">
             Their phone number
           </label>
           <input
@@ -156,9 +159,7 @@ export default function PlanForm() {
             aria-invalid={phoneError}
             aria-describedby={phoneError ? "plan-phone-error" : undefined}
             placeholder="+91 98765 43210"
-            className={`w-full rounded-lg border bg-surface px-3 py-2 ${
-              phoneError ? "border-danger" : "border-surface-2"
-            }`}
+            className={`${FIELD_CLASSES} ${phoneError ? "border-danger" : ""}`}
           />
           {phoneError && (
             <p id="plan-phone-error" role="alert" className="text-sm font-medium text-danger">
@@ -169,7 +170,7 @@ export default function PlanForm() {
       </div>
 
       <fieldset className="space-y-3">
-        <legend className="font-medium">Coping tools that work for you</legend>
+        <legend className="text-sm font-semibold">Coping tools that work for you</legend>
         <div className="flex flex-wrap gap-2">
           {PRESET_TOOLS.map((tool) => {
             const active = current.copingTools.includes(tool);
@@ -179,10 +180,10 @@ export default function PlanForm() {
                 type="button"
                 onClick={() => toggleTool(tool)}
                 aria-pressed={active}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                className={`lift rounded-full px-4 py-2 text-sm font-semibold transition ${
                   active
-                    ? "border-primary bg-primary text-white"
-                    : "border-surface-2 bg-surface hover:border-primary hover:text-primary"
+                    ? "bg-primary-soft text-primary-strong shadow-sm ring-1 ring-primary/30"
+                    : "bg-surface-2 text-muted ring-1 ring-card-border hover:text-foreground"
                 }`}
               >
                 {tool}
@@ -196,7 +197,7 @@ export default function PlanForm() {
               onClick={() => toggleTool(tool)}
               aria-pressed={true}
               title="Tap to remove"
-              className="rounded-full border border-primary bg-primary px-4 py-2 text-sm font-medium text-white"
+              className="lift rounded-full bg-primary-soft px-4 py-2 text-sm font-semibold text-primary-strong shadow-sm ring-1 ring-primary/30"
             >
               {tool} ✕
             </button>
@@ -219,22 +220,22 @@ export default function PlanForm() {
             }}
             maxLength={100}
             placeholder="Add your own…"
-            className="w-full max-w-xs rounded-lg border border-surface-2 bg-surface px-3 py-2 text-sm"
+            className={`${FIELD_CLASSES} max-w-xs text-sm`}
           />
           <button
             type="button"
             onClick={addCustomTool}
-            className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary-soft"
+            className="lift rounded-xl px-4 py-2 text-sm font-semibold text-primary ring-1 ring-primary/40 hover:bg-primary-soft"
           >
             Add
           </button>
         </div>
       </fieldset>
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4 border-t border-card-border pt-6">
         <button
           type="submit"
-          className="rounded-xl bg-primary px-6 py-3 font-bold text-white hover:bg-primary-strong"
+          className="lift rounded-full bg-primary px-7 py-3 font-bold text-white hover:bg-primary-strong"
         >
           Save my plan
         </button>
@@ -242,15 +243,20 @@ export default function PlanForm() {
           type="button"
           onClick={handleClear}
           onBlur={() => setClearArmed(false)}
-          className={`rounded-xl border px-6 py-3 font-semibold transition ${
+          className={`lift rounded-full px-6 py-3 font-semibold transition ${
             clearArmed
-              ? "border-danger bg-danger text-white"
-              : "border-surface-2 text-muted hover:border-danger hover:text-danger"
+              ? "bg-danger text-white"
+              : "text-muted ring-1 ring-card-border hover:text-danger hover:ring-danger/50"
           }`}
         >
           {clearArmed ? "Tap again to confirm" : "Clear my data"}
         </button>
-        <p aria-live="polite" className="text-sm font-medium text-primary">
+        <p
+          aria-live="polite"
+          className={`text-sm font-semibold ${
+            savedMessage ? "rounded-full bg-primary-soft px-4 py-2 text-primary-strong" : "text-primary"
+          }`}
+        >
           {savedMessage}
         </p>
       </div>

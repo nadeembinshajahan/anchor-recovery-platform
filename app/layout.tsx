@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
 import HotlineBar from "@/components/HotlineBar";
+import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,10 +44,12 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <Header />
-        <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-          {children}
-        </main>
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 lg:flex-row lg:px-8">
+          <Sidebar />
+          <main id="main" className="min-w-0 flex-1 animate-fade-up">
+            {children}
+          </main>
+        </div>
         <HotlineBar />
       </body>
     </html>

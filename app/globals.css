@@ -1,51 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7faf9;
-  --foreground: #12211d;
-  --surface: #ffffff;
-  --surface-2: #eef4f2;
-  --primary: #0f766e;
-  --primary-strong: #115e59;
-  --primary-soft: #ccfbf1;
-  --accent: #b45309;
-  --danger: #b91c1c;
-  --danger-soft: #fee2e2;
-  --muted: #4b6560;
-  --ring: #14b8a6;
+  --background: #faf6ef;
+  --foreground: #241d16;
+  --surface: rgba(255, 255, 255, 0.66);
+  --surface-solid: #ffffff;
+  --surface-2: rgba(255, 250, 242, 0.85);
+  --card-border: rgba(255, 255, 255, 0.75);
+  --primary: #0d9488;
+  --primary-strong: #0f766e;
+  --primary-soft: rgba(13, 148, 136, 0.12);
+  --accent: #f59e0b;
+  --accent-soft: rgba(245, 158, 11, 0.14);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --muted: #857766;
+  --ring: #0d9488;
+  --shadow-soft: 0 8px 30px rgba(180, 130, 60, 0.1);
+  --shadow-lift: 0 16px 40px rgba(180, 130, 60, 0.16);
+  --blob-a: #ffd9a8;
+  --blob-b: #ffb37a;
+  --blob-c: #ffe9c9;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-solid: var(--surface-solid);
   --color-surface-2: var(--surface-2);
+  --color-card-border: var(--card-border);
   --color-primary: var(--primary);
   --color-primary-strong: var(--primary-strong);
   --color-primary-soft: var(--primary-soft);
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-muted: var(--muted);
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c1513;
-    --foreground: #e6f1ee;
-    --surface: #132420;
-    --surface-2: #1a302b;
+    --background: #171310;
+    --foreground: #f2ebe1;
+    --surface: rgba(38, 32, 26, 0.72);
+    --surface-solid: #262019;
+    --surface-2: rgba(52, 44, 35, 0.85);
+    --card-border: rgba(255, 235, 200, 0.08);
     --primary: #2dd4bf;
     --primary-strong: #5eead4;
-    --primary-soft: #134e4a;
+    --primary-soft: rgba(45, 212, 191, 0.14);
     --accent: #fbbf24;
+    --accent-soft: rgba(251, 191, 36, 0.12);
     --danger: #f87171;
-    --danger-soft: #450a0a;
-    --muted: #94b8b0;
+    --danger-soft: rgba(248, 113, 113, 0.12);
+    --muted: #b3a696;
     --ring: #2dd4bf;
+    --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.35);
+    --shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.5);
+    --blob-a: #4a3319;
+    --blob-b: #59341d;
+    --blob-c: #3b2c16;
   }
 }
 
@@ -53,16 +74,62 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100svh;
 }
 
-/* Visible focus for keyboard users on every interactive element. */
+/* Warm ambient gradient blobs behind everything (paint-cheap: fixed, no JS). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(42rem 42rem at 8% -5%, var(--blob-a), transparent 60%),
+    radial-gradient(36rem 36rem at -8% 55%, var(--blob-b), transparent 62%),
+    radial-gradient(48rem 40rem at 105% 110%, var(--blob-c), transparent 60%);
+  opacity: 0.8;
+}
+
+/* Frosted-glass card. Used across every page for visual consistency. */
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Interactive cards lift gently; buttons/links share the same easing. */
+.lift {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+}
+.lift:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* Small uppercase section label, as in the reference design. */
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 :focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-/* Respect users who are sensitive to motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -86,6 +153,21 @@ body {
 
 .animate-breathe {
   animation: breathe 12s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .sr-only {

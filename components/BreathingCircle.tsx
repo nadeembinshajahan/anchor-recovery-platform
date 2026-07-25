@@ -9,9 +9,10 @@ const PHASES = [
 ] as const;
 
 /**
- * A guided-breathing visual: the circle expands and contracts on a 12s
- * cycle while the phase label is announced to screen readers. Purely
- * client-side so it works even if the network or AI is unavailable.
+ * A guided-breathing visual: layered gradient circles expand and contract
+ * on a 12s cycle while the phase label is announced to screen readers.
+ * Purely client-side CSS animation so it works even if the network or AI
+ * is unavailable; `prefers-reduced-motion` collapses it to a static figure.
  */
 export default function BreathingCircle() {
   const [phase, setPhase] = useState(0);
@@ -23,15 +24,39 @@ export default function BreathingCircle() {
 
   return (
     <figure className="flex flex-col items-center gap-6 py-6">
-      <div className="relative flex h-52 w-52 items-center justify-center" aria-hidden="true">
-        <div className="animate-breathe absolute inset-0 rounded-full bg-primary-soft" />
-        <div className="animate-breathe absolute inset-6 rounded-full bg-primary/30" />
-        <span className="relative text-lg font-semibold text-primary-strong">
+      <div className="relative flex h-56 w-56 items-center justify-center" aria-hidden="true">
+        {/* Warm outer halo */}
+        <div
+          className="animate-breathe absolute inset-0 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 45%, var(--accent-soft), transparent 72%)",
+          }}
+        />
+        {/* Soft teal mid layer */}
+        <div
+          className="animate-breathe absolute inset-5 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 40%, var(--primary-soft), transparent 78%)",
+            animationDelay: "150ms",
+          }}
+        />
+        {/* Core */}
+        <div
+          className="animate-breathe absolute inset-12 rounded-full shadow-soft"
+          style={{
+            background:
+              "radial-gradient(circle at 42% 34%, color-mix(in srgb, var(--primary) 38%, transparent), color-mix(in srgb, var(--primary) 14%, transparent) 70%)",
+            animationDelay: "300ms",
+          }}
+        />
+        <span className="relative text-lg font-semibold tracking-tight text-primary-strong">
           {PHASES[phase].label}
         </span>
       </div>
-      <figcaption aria-live="polite" className="text-muted">
-        {PHASES[phase].label} for {PHASES[phase].seconds} seconds… follow the circle.
+      <figcaption aria-live="polite" className="eyebrow">
+        {PHASES[phase].label} for {PHASES[phase].seconds} seconds — follow the circle
       </figcaption>
     </figure>
   );

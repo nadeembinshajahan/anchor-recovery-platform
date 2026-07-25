@@ -38,6 +38,13 @@ export interface LiveSessionHandlers {
 export interface LiveSessionHandle {
   /** Tear down mic, audio contexts and the WebSocket session. Idempotent. */
   stop: () => void;
+  /**
+   * Smoothed audio amplitudes in [0, 1] for visualization — `input` is the
+   * user's microphone, `output` is the model's voice. Designed to be polled
+   * once per animation frame; smoothing (fast attack, slow release) happens
+   * internally so the caller can map values straight to transforms.
+   */
+  getLevels: () => { input: number; output: number };
 }
 
 /** Sample rates required by the Live API (input) and returned by it (output). */
@@ -87,6 +94,32 @@ function base64ToAudioBuffer(b64: string, ctx: AudioContext): AudioBuffer {
   return buffer;
 }
 
+/**
+ * Rough loudness of an analyser's current window: RMS of the time-domain
+ * signal, boosted into a perceptually useful 0..1 range for visuals
+ * (conversational speech RMS rarely exceeds ~0.35).
+ */
+function analyserLevel(analyser: AnalyserNode, scratch: Uint8Array<ArrayBuffer>): number {
+  analyser.getByteTimeDomainData(scratch);
+  let sumSquares = 0;
+  for (let i = 0; i < scratch.length; i++) {
+    const centered = (scratch[i] - 128) / 128;
+    sumSquares += centered * centered;
+  }
+  const rms = Math.sqrt(sumSquares / scratch.length);
+  return Math.min(1, rms * 2.8);
+}
+
+/**
+ * Asymmetric exponential smoothing for animation: rises quickly with the
+ * voice (attack) and decays gently (release) so motion feels organic
+ * instead of flickering with every syllable.
+ */
+function smooth(previous: number, target: number): number {
+  const factor = target > previous ? 0.5 : 0.12;
+  return previous + (target - previous) * factor;
+}
+
 /** True when the current browser can run the full Live pipeline. */
 export function supportsLiveVoice(): boolean {
   return (
@@ -125,8 +158,14 @@ export async function startLiveSession(
   await captureCtx.audioWorklet.addModule(workletUrl);
   URL.revokeObjectURL(workletUrl);
 
-  // 3. Playback context and a gapless scheduling queue.
+  // 3. Playback context and a gapless scheduling queue. All model audio is
+  // routed through a shared bus so a single AnalyserNode can observe it.
   const playbackCtx = new AudioContext({ sampleRate: OUTPUT_RATE });
+  const outputBus = playbackCtx.createGain();
+  const outputAnalyser = playbackCtx.createAnalyser();
+  outputAnalyser.fftSize = 1024;
+  outputBus.connect(outputAnalyser);
+  outputAnalyser.connect(playbackCtx.destination);
   let playhead = 0;
   let liveSources: AudioBufferSourceNode[] = [];
 
@@ -146,7 +185,7 @@ export async function startLiveSession(
     const buffer = base64ToAudioBuffer(b64, playbackCtx);
     const source = playbackCtx.createBufferSource();
     source.buffer = buffer;
-    source.connect(playbackCtx.destination);
+    source.connect(outputBus);
     playhead = Math.max(playhead, playbackCtx.currentTime);
     source.start(playhead);
     playhead += buffer.duration;
@@ -160,6 +199,7 @@ export async function startLiveSession(
   // 4. Connect to Gemini Live with the ephemeral token.
   let session: Session | null = null;
   let stopped = false;
+  let inputAnalyser: AnalyserNode | null = null;
 
   const stop = () => {
     if (stopped) return;
@@ -169,6 +209,9 @@ export async function startLiveSession(
     } catch {
       /* socket may already be closed */
     }
+    inputAnalyser?.disconnect();
+    outputAnalyser.disconnect();
+    outputBus.disconnect();
     mic.getTracks().forEach((t) => t.stop());
     void captureCtx.close();
     void playbackCtx.close();
@@ -219,8 +262,12 @@ export async function startLiveSession(
     throw err instanceof Error ? err : new Error("Voice connection failed.");
   }
 
-  // 5. Start streaming mic frames to the session.
+  // 5. Start streaming mic frames to the session. The analyser taps the mic
+  // signal in parallel with the worklet — it never alters what is sent.
   const source = captureCtx.createMediaStreamSource(mic);
+  inputAnalyser = captureCtx.createAnalyser();
+  inputAnalyser.fftSize = 1024;
+  source.connect(inputAnalyser);
   const worklet = new AudioWorkletNode(captureCtx, "pcm-forwarder");
   worklet.port.onmessage = (event: MessageEvent<Float32Array>) => {
     if (stopped || !session) return;
@@ -237,6 +284,20 @@ export async function startLiveSession(
   silent.gain.value = 0;
   worklet.connect(silent).connect(captureCtx.destination);
 
+  // 6. Level polling for the visualizer (see LiveSessionHandle.getLevels).
+  const scratch = new Uint8Array(1024);
+  let inputLevel = 0;
+  let outputLevel = 0;
+  const getLevels = () => {
+    if (stopped) return { input: 0, output: 0 };
+    inputLevel = smooth(
+      inputLevel,
+      inputAnalyser ? analyserLevel(inputAnalyser, scratch) : 0,
+    );
+    outputLevel = smooth(outputLevel, analyserLevel(outputAnalyser, scratch));
+    return { input: inputLevel, output: outputLevel };
+  };
+
   handlers.onStatus("live");
-  return { stop };
+  return { stop, getLevels };
 }

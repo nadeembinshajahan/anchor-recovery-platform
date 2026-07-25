@@ -48,37 +48,41 @@ export default function CaregiverClient() {
   }, [situation, result.status]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {!situation ? (
-        <section aria-label="Pick your situation" className="grid gap-4 sm:grid-cols-2">
-          {CAREGIVER_SITUATIONS.map((s) => (
+        <section aria-label="Pick your situation" className="grid gap-5 sm:grid-cols-2">
+          {CAREGIVER_SITUATIONS.map((s, i) => (
             <button
               key={s.id}
               type="button"
               onClick={() => choose(s)}
-              className="min-h-24 rounded-2xl border border-surface-2 bg-surface p-5 text-left transition hover:border-primary hover:shadow-md active:scale-[0.99]"
+              className="glass lift animate-fade-up min-h-28 p-6 text-left"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <span className="block text-lg font-semibold">{s.label}</span>
-              <span className="mt-1 block text-sm text-muted">{s.context}</span>
+              <span className="mt-1.5 block text-sm leading-relaxed text-muted">
+                {s.context}
+              </span>
             </button>
           ))}
         </section>
       ) : (
-        <section aria-busy={result.status === "loading"} className="space-y-4">
+        <section aria-busy={result.status === "loading"} className="animate-fade-up space-y-5">
           <div className="flex items-center justify-between gap-4">
-            <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-bold">
+            <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight">
               {situation.label}
             </h2>
             <button
               type="button"
               onClick={() => setSituation(null)}
-              className="rounded-lg border border-surface-2 px-3 py-2 text-sm font-medium hover:bg-surface-2"
+              className="lift shrink-0 rounded-full bg-surface-2 px-4 py-2 text-sm font-semibold text-muted hover:text-foreground"
             >
               ← Other situations
             </button>
           </div>
 
-          <div className="rounded-2xl border border-primary/30 bg-surface p-6 shadow-sm">
+          <div className="glass p-7">
+            <p className="eyebrow mb-3">For this moment</p>
             {result.status === "loading" && (
               <p className="text-muted" aria-live="polite">
                 Writing a script for this situation…
@@ -88,12 +92,18 @@ export default function CaregiverClient() {
             {result.status === "error" && (
               <div className="space-y-3">
                 <p className="text-sm text-muted" aria-live="polite">
-                  The AI script writer is unavailable right now — these fundamentals apply to
-                  almost every situation:
+                  The AI script writer is unavailable right now — these fundamentals apply
+                  to almost every situation:
                 </p>
-                <ul className="list-disc space-y-2 pl-5">
+                <ul className="space-y-2.5">
                   {CAREGIVER_FALLBACK_TIPS.map((tip) => (
-                    <li key={tip}>{tip}</li>
+                    <li key={tip} className="flex items-start gap-2.5">
+                      <span
+                        aria-hidden="true"
+                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                      />
+                      <span>{tip}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -104,20 +114,34 @@ export default function CaregiverClient() {
 
       <section
         aria-label="In a crisis"
-        className="rounded-2xl bg-surface-2 p-5 text-sm"
+        className="glass p-6"
+        style={{ background: "var(--accent-soft)" }}
       >
-        <h2 className="mb-1 font-semibold">In a crisis</h2>
-        <p className="text-muted">
-          If they are unresponsive, having a seizure, or you fear an overdose, call{" "}
-          <a href="tel:112" className="font-bold underline">
-            112
-          </a>{" "}
-          now. For treatment centres and hospitals around you, see{" "}
-          <Link href="/nearby" className="font-semibold text-primary underline">
-            Find help nearby
-          </Link>
-          , and the 24x7 helplines at the bottom of every page.
+        <p className="eyebrow mb-2">In a crisis</p>
+        <p className="text-sm leading-relaxed text-muted">
+          If they are unresponsive, having a seizure, or you fear an overdose, act now —
+          don&apos;t wait it out.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          <a
+            href="tel:112"
+            className="lift rounded-full bg-danger px-5 py-2.5 text-sm font-bold text-white"
+          >
+            Call 112
+          </a>
+          <a
+            href="tel:18005990019"
+            className="lift rounded-full bg-surface-solid px-5 py-2.5 text-sm font-semibold shadow-soft"
+          >
+            KIRAN 1800-599-0019
+          </a>
+          <Link
+            href="/nearby"
+            className="lift rounded-full bg-surface-solid px-5 py-2.5 text-sm font-semibold text-primary shadow-soft"
+          >
+            Find help nearby →
+          </Link>
+        </div>
       </section>
     </div>
   );

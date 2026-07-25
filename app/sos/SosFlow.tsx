@@ -14,12 +14,12 @@ import BreathingCircle from "@/components/BreathingCircle";
 import { planToProfile, useSafetyPlan } from "@/lib/profile";
 
 const SITUATIONS = [
-  { id: "craving", label: "I'm having a craving", detail: "An intense urge to use is building right now." },
-  { id: "overwhelmed", label: "I'm overwhelmed", detail: "Panic, anxiety or racing thoughts are taking over." },
-  { id: "risky-place", label: "I'm somewhere risky", detail: "I am near people or places connected to using." },
-  { id: "lonely", label: "I feel alone", detail: "Isolation and low mood are pulling me down." },
-  { id: "slipped", label: "I slipped", detail: "I used and I am scared or ashamed. I need next steps, not judgment." },
-  { id: "cant-sleep", label: "I can't sleep", detail: "It is late, I am restless and my thoughts are loud." },
+  { id: "craving", emoji: "🌊", label: "I'm having a craving", detail: "An intense urge to use is building right now." },
+  { id: "overwhelmed", emoji: "🌀", label: "I'm overwhelmed", detail: "Panic, anxiety or racing thoughts are taking over." },
+  { id: "risky-place", emoji: "📍", label: "I'm somewhere risky", detail: "I am near people or places connected to using." },
+  { id: "lonely", emoji: "🫂", label: "I feel alone", detail: "Isolation and low mood are pulling me down." },
+  { id: "slipped", emoji: "🌱", label: "I slipped", detail: "I used and I am scared or ashamed. I need next steps, not judgment." },
+  { id: "cant-sleep", emoji: "🌙", label: "I can't sleep", detail: "It is late, I am restless and my thoughts are loud." },
 ] as const;
 
 type Situation = (typeof SITUATIONS)[number];
@@ -79,21 +79,35 @@ export default function SosFlow() {
 
   if (!situation) {
     return (
-      <div className="space-y-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">What&apos;s happening right now?</h1>
-          <p className="text-muted">Tap the closest one. No typing needed.</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {SITUATIONS.map((s) => (
+      <div className="space-y-6">
+        <section className="glass p-8 text-center">
+          <p className="eyebrow">You&apos;re in the right place</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            What&apos;s happening right now?
+          </h1>
+          <p className="mt-2 text-muted">Tap the closest one. No typing needed.</p>
+        </section>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {SITUATIONS.map((s, i) => (
             <button
               key={s.id}
               type="button"
               onClick={() => choose(s)}
-              className="min-h-24 rounded-2xl border border-surface-2 bg-surface p-5 text-left transition hover:border-primary hover:shadow-md active:scale-[0.99]"
+              className="glass lift animate-fade-up flex min-h-28 items-start gap-4 p-6 text-left"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
-              <span className="block text-lg font-semibold">{s.label}</span>
-              <span className="mt-1 block text-sm text-muted">{s.detail}</span>
+              <span
+                aria-hidden="true"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-xl"
+              >
+                {s.emoji}
+              </span>
+              <span>
+                <span className="block text-lg font-semibold">{s.label}</span>
+                <span className="mt-1 block text-sm leading-relaxed text-muted">
+                  {s.detail}
+                </span>
+              </span>
             </button>
           ))}
         </div>
@@ -102,15 +116,18 @@ export default function SosFlow() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold">
+        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight">
+          <span aria-hidden="true" className="mr-2">
+            {situation.emoji}
+          </span>
           {situation.label}
         </h1>
         <button
           type="button"
           onClick={() => setSituation(null)}
-          className="rounded-lg border border-surface-2 px-3 py-2 text-sm font-medium hover:bg-surface-2"
+          className="lift shrink-0 rounded-full border border-card-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
         >
           ← Choose again
         </button>
@@ -119,9 +136,9 @@ export default function SosFlow() {
       <section
         aria-label="Your grounding script"
         aria-busy={loading}
-        className="rounded-2xl border border-primary/30 bg-surface p-6 shadow-sm"
+        className="glass overflow-hidden p-6 ring-1 ring-primary/25 sm:p-8"
       >
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted" aria-live="polite">
+        <p className="eyebrow mb-4" aria-live="polite">
           {loading
             ? "Personalizing your script…"
             : personalized
@@ -130,32 +147,40 @@ export default function SosFlow() {
                 : "Written for you just now"
               : "Grounding steps"}
         </p>
-        <AiText text={script} />
+        {/* Re-keyed so the personalized script fades in over the fallback. */}
+        <div
+          key={personalized ? "personal" : "fallback"}
+          className={`animate-fade-up leading-relaxed transition-opacity duration-300 ${
+            loading ? "opacity-70" : "opacity-100"
+          }`}
+        >
+          <AiText text={script} />
+        </div>
       </section>
 
-      <section aria-label="Guided breathing">
+      <section aria-label="Guided breathing" className="glass p-4">
         <BreathingCircle />
       </section>
 
-      <section aria-label="Reach a person" className="grid gap-3 sm:grid-cols-2">
+      <section aria-label="Reach a person" className="grid gap-4 sm:grid-cols-2">
         {ready && plan.supporterPhone ? (
           <a
             href={`tel:${plan.supporterPhone}`}
-            className="rounded-2xl bg-primary px-6 py-4 text-center text-lg font-bold text-white hover:bg-primary-strong"
+            className="lift rounded-full bg-primary px-6 py-4 text-center text-lg font-bold text-white shadow-soft hover:bg-primary-strong"
           >
             Call {plan.supporter || "my person"}
           </a>
         ) : (
           <Link
             href="/plan"
-            className="rounded-2xl border border-primary px-6 py-4 text-center text-lg font-semibold text-primary hover:bg-primary-soft"
+            className="lift rounded-full border-2 border-primary bg-surface px-6 py-4 text-center text-lg font-semibold text-primary shadow-soft"
           >
             Add a trusted contact
           </Link>
         )}
         <a
           href="tel:18005990019"
-          className="rounded-2xl bg-danger px-6 py-4 text-center text-lg font-bold text-white hover:opacity-90"
+          className="lift rounded-full bg-danger px-6 py-4 text-center text-lg font-bold text-white shadow-soft hover:opacity-90"
         >
           Call KIRAN helpline
         </a>

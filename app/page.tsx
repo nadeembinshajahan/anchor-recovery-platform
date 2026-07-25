@@ -1,9 +1,11 @@
 import Link from "next/link";
+import Greeting from "@/components/Greeting";
 
 interface PathCard {
   href: string;
   title: string;
   body: string;
+  cta: string;
   emphasis?: boolean;
 }
 
@@ -11,73 +13,100 @@ const PATHS: readonly PathCard[] = [
   {
     href: "/sos",
     title: "I need support right now",
-    body: "Zero-typing crisis flows: tap how you feel and get a personal, step-by-step script instantly.",
+    body: "Tap how you feel and get a personal, step-by-step script instantly. Zero typing.",
+    cta: "Open SOS",
     emphasis: true,
   },
   {
     href: "/companion",
     title: "Talk it out",
-    body: "A hands-free voice companion that listens and responds in real time — no typing needed.",
+    body: "A hands-free voice companion that listens and responds in real time.",
+    cta: "Start talking",
   },
   {
     href: "/caregiver",
     title: "I'm supporting someone",
-    body: "Say-this-not-that scripts, warning signs, and practical steps for family and caregivers.",
+    body: "Say-this-not-that scripts, warning signs, and practical steps for family.",
+    cta: "Caregiver tools",
   },
   {
     href: "/learn",
     title: "Understand recovery",
-    body: "Plain-language education on cravings, triggers, relapse, and how to help — explained by AI on demand.",
+    body: "Plain-language education on cravings, triggers, and relapse — explained on demand.",
+    cta: "Browse topics",
   },
   {
     href: "/nearby",
     title: "Find help nearby",
-    body: "Locate de-addiction centres, hospitals, and pharmacies around you, plus 24x7 helplines.",
+    body: "De-addiction centres, hospitals, and pharmacies around you, plus 24×7 helplines.",
+    cta: "Open map",
   },
   {
     href: "/plan",
     title: "My safety plan",
-    body: "Store your coping tools and trusted contact on this device to personalize every intervention.",
+    body: "Store coping tools and a trusted contact on this device to personalize everything.",
+    cta: "Edit plan",
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="space-y-10">
-      <section className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">
-          Steady support, <span className="text-primary">exactly when thinking is hardest.</span>
+    <div className="space-y-6">
+      <section className="glass p-8">
+        <Greeting />
+        <h1 className="mt-1 max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
+          Steady support,{" "}
+          <span className="text-primary">exactly when thinking is hardest.</span>
         </h1>
-        <p className="mx-auto max-w-2xl text-lg text-muted">
-          Anchor supports people navigating substance use recovery — and the people who love
-          them — with AI-personalized interventions designed for moments of high stress:
-          big buttons, short steps, voice-first, no typing required.
+        <p className="mt-3 max-w-2xl text-muted">
+          Anchor supports people navigating substance use recovery — and the people who
+          love them — with AI-personalized interventions built for moments of high
+          stress: big buttons, short steps, voice-first, no typing required.
         </p>
       </section>
 
-      <section aria-label="Choose your path" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section aria-label="Choose your path" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {PATHS.map((p) => (
           <Link
             key={p.href}
             href={p.href}
-            className={`block rounded-2xl border p-6 transition hover:-translate-y-0.5 hover:shadow-md ${
-              p.emphasis
-                ? "border-danger/40 bg-danger-soft"
-                : "border-surface-2 bg-surface"
+            className={`glass lift group flex flex-col p-6 ${
+              p.emphasis ? "ring-2 ring-danger/30" : ""
             }`}
           >
-            <h2 className="mb-2 text-xl font-semibold">{p.title}</h2>
-            <p className="text-sm text-muted">{p.body}</p>
+            <h2 className="text-lg font-semibold">{p.title}</h2>
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{p.body}</p>
+            <span
+              className={`mt-4 inline-flex items-center gap-1.5 text-sm font-semibold ${
+                p.emphasis ? "text-danger" : "text-primary"
+              }`}
+            >
+              {p.cta}
+              <span
+                aria-hidden="true"
+                className="transition-transform duration-200 group-hover:translate-x-1"
+              >
+                →
+              </span>
+            </span>
           </Link>
         ))}
       </section>
 
-      <section className="rounded-2xl bg-surface-2 p-6 text-sm text-muted">
-        <h2 className="mb-2 font-semibold text-foreground">Private by design</h2>
-        <p>
-          Your safety plan never leaves this device. Anchor is a support tool, not a medical
-          service — in an emergency, always call 112 or a helpline below.
-        </p>
+      <section className="glass flex flex-col gap-2 p-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="eyebrow">Private by design</p>
+          <p className="mt-1">
+            Your safety plan never leaves this device. Anchor is a support tool, not a
+            medical service — in an emergency, always call 112.
+          </p>
+        </div>
+        <Link
+          href="/plan"
+          className="lift inline-flex shrink-0 items-center justify-center rounded-2xl bg-primary px-5 py-2.5 font-semibold text-white"
+        >
+          Set up my plan
+        </Link>
       </section>
     </div>
   );
