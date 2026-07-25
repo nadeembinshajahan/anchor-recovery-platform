@@ -3,7 +3,7 @@
  * place without touching feature code.
  */
 export const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
-export const GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-09-2025";
+export const GEMINI_LIVE_MODEL = "gemini-3.1-flash-live-preview";
 
 /** Hard cap on user-supplied text sent to the model (characters). */
 export const MAX_INPUT_CHARS = 2000;
