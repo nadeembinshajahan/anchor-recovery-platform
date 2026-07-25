@@ -26,6 +26,10 @@ function client(): GoogleGenAI {
   return cachedClient;
 }
 
+/** Upstream calls are abandoned after this long so a slow model response
+ *  can never pin a connection open indefinitely. */
+const GENERATION_TIMEOUT_MS = 30_000;
+
 export async function generateText(req: GenerateRequest): Promise<string> {
   const { system, user } = buildPrompt(req);
   const response = await client().models.generateContent({
@@ -35,6 +39,7 @@ export async function generateText(req: GenerateRequest): Promise<string> {
       systemInstruction: system,
       temperature: 0.7,
       maxOutputTokens: 800,
+      abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
     },
   });
   const text = response.text;

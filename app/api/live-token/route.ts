@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (isRateLimited(clientKey(request), 6)) {
     return NextResponse.json(
       { error: "Too many requests. Please wait a moment." },
-      { status: 429 },
+      { status: 429, headers: { "Retry-After": "30" } },
     );
   }
 

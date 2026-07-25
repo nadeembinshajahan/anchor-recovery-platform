@@ -22,12 +22,21 @@ const responseCache = new TtlLruCache<string>({
   ttlMs: 60 * 60 * 1000, // 1 hour
 });
 
+/** Largest accepted request body; the schema itself caps fields far lower,
+ *  this just refuses oversized payloads before JSON parsing costs anything. */
+const MAX_BODY_BYTES = 16 * 1024;
+
 export async function POST(request: Request): Promise<NextResponse> {
   if (isRateLimited(clientKey(request))) {
     return NextResponse.json(
       { error: "Too many requests. Please wait a moment." },
-      { status: 429 },
+      { status: 429, headers: { "Retry-After": "30" } },
     );
+  }
+
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "Request body too large." }, { status: 413 });
   }
 
   let body: unknown;
